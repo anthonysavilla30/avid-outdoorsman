@@ -490,6 +490,36 @@ export default function MapScreen() {
             </View>
           )}
 
+          {/* Offline Maps Info */}
+          <View style={styles.featureCard}>
+            <View style={styles.featureHeader}>
+              <IconSymbol name="arrow.down.circle.fill" size={28} color={colors.primary} />
+              <Text style={styles.featureTitle}>Offline Maps</Text>
+            </View>
+            <Text style={styles.featureDescription}>
+              Download maps for offline use in areas with limited connectivity. Perfect for backcountry adventures where cell service is unavailable.
+            </Text>
+            <Pressable style={styles.featureButton}>
+              <Text style={styles.featureButtonText}>Coming Soon</Text>
+              <IconSymbol name="chevron.right" size={16} color={colors.primary} />
+            </Pressable>
+          </View>
+
+          {/* AR Features Info */}
+          <View style={styles.featureCard}>
+            <View style={styles.featureHeader}>
+              <IconSymbol name="camera.fill" size={28} color={colors.accent} />
+              <Text style={styles.featureTitle}>Augmented Reality</Text>
+            </View>
+            <Text style={styles.featureDescription}>
+              Overlay trail information, points of interest, and wildlife sightings onto your camera view. See real-time data about your surroundings.
+            </Text>
+            <Pressable style={styles.featureButton}>
+              <Text style={styles.featureButtonText}>Coming Soon</Text>
+              <IconSymbol name="chevron.right" size={16} color={colors.accent} />
+            </Pressable>
+          </View>
+
           <View style={styles.legendSection}>
             <Text style={styles.legendTitle}>Map Legend</Text>
             <View style={styles.legendGrid}>
@@ -912,6 +942,44 @@ const styles = StyleSheet.create({
   landmarkCoords: {
     fontSize: 12,
     color: colors.textSecondary,
+  },
+  featureCard: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    boxShadow: `0px 2px 8px ${colors.shadow}`,
+    elevation: 3,
+  },
+  featureHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  featureTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  featureDescription: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  featureButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.background,
+    padding: 12,
+    borderRadius: 8,
+  },
+  featureButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
   },
   legendSection: {
     backgroundColor: colors.card,

@@ -1,0 +1,128 @@
+
+import { GearRecommendation } from '@/types/GearRecommendation';
+
+export const mockGearRecommendations: GearRecommendation[] = [
+  {
+    activity: 'hiking',
+    weather: 'Clear',
+    difficulty: 'moderate',
+    items: [
+      {
+        id: '1',
+        name: 'Hiking Boots',
+        category: 'clothing',
+        description: 'Sturdy, waterproof hiking boots with ankle support',
+        priority: 'essential',
+        icon: 'shoe.fill',
+      },
+      {
+        id: '2',
+        name: 'Water Bottle (2L)',
+        category: 'equipment',
+        description: 'Stay hydrated on the trail',
+        priority: 'essential',
+        icon: 'drop.fill',
+      },
+      {
+        id: '3',
+        name: 'First Aid Kit',
+        category: 'safety',
+        description: 'Basic first aid supplies for emergencies',
+        priority: 'essential',
+        icon: 'cross.case.fill',
+      },
+      {
+        id: '4',
+        name: 'Trail Map & Compass',
+        category: 'navigation',
+        description: 'Physical navigation backup',
+        priority: 'recommended',
+        icon: 'map.fill',
+      },
+      {
+        id: '5',
+        name: 'Energy Bars',
+        category: 'food',
+        description: 'Quick energy for the trail',
+        priority: 'recommended',
+        icon: 'leaf.fill',
+      },
+    ],
+  },
+  {
+    activity: 'fishing',
+    weather: 'Partly Cloudy',
+    items: [
+      {
+        id: '6',
+        name: 'Fishing Rod & Reel',
+        category: 'equipment',
+        description: 'Appropriate for target species',
+        priority: 'essential',
+        icon: 'fish.fill',
+      },
+      {
+        id: '7',
+        name: 'Tackle Box',
+        category: 'equipment',
+        description: 'Variety of lures and hooks',
+        priority: 'essential',
+        icon: 'square.grid.2x2.fill',
+      },
+      {
+        id: '8',
+        name: 'Polarized Sunglasses',
+        category: 'clothing',
+        description: 'See through water surface glare',
+        priority: 'recommended',
+        icon: 'sun.max.fill',
+      },
+      {
+        id: '9',
+        name: 'Fishing License',
+        category: 'safety',
+        description: 'Required by law',
+        priority: 'essential',
+        icon: 'doc.text.fill',
+      },
+    ],
+  },
+  {
+    activity: 'camping',
+    weather: 'Clear',
+    items: [
+      {
+        id: '10',
+        name: 'Tent',
+        category: 'equipment',
+        description: 'Weather-appropriate shelter',
+        priority: 'essential',
+        icon: 'tent.fill',
+      },
+      {
+        id: '11',
+        name: 'Sleeping Bag',
+        category: 'equipment',
+        description: 'Rated for expected temperatures',
+        priority: 'essential',
+        icon: 'bed.double.fill',
+      },
+      {
+        id: '12',
+        name: 'Headlamp',
+        category: 'equipment',
+        description: 'Hands-free lighting',
+        priority: 'essential',
+        icon: 'lightbulb.fill',
+      },
+      {
+        id: '13',
+        name: 'Camp Stove',
+        category: 'equipment',
+        description: 'For cooking meals',
+        priority: 'recommended',
+        icon: 'flame.fill',
+      },
+    ],
+  },
+];

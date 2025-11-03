@@ -11,6 +11,8 @@ import {
 import React, { useState } from 'react';
 import { Stack, useRouter } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
+import { mockWeatherAlerts } from '@/data/mockWeatherAlerts';
+import { WeatherAlert } from '@/types/Weather';
 
 interface HourlyForecast {
   time: string;
@@ -90,6 +92,27 @@ export default function WeatherScreen() {
     </View>
   );
 
+  const getAlertColor = (severity: string) => {
+    switch (severity) {
+      case 'warning': return colors.secondary;
+      case 'watch': return colors.accent;
+      case 'advisory': return colors.primary;
+      default: return colors.textSecondary;
+    }
+  };
+
+  const getAlertIcon = (type: string) => {
+    switch (type) {
+      case 'severe-thunderstorm': return 'cloud.bolt.fill';
+      case 'flood': return 'drop.fill';
+      case 'winter-storm': return 'snowflake';
+      case 'heat': return 'sun.max.fill';
+      case 'wind': return 'wind';
+      case 'fire': return 'flame.fill';
+      default: return 'exclamationmark.triangle.fill';
+    }
+  };
+
   return (
     <>
       {Platform.OS === 'ios' && (
@@ -130,6 +153,53 @@ export default function WeatherScreen() {
               </View>
             </View>
           )}
+
+          {/* Weather Alerts */}
+          {mockWeatherAlerts.length > 0 && (
+            <View style={styles.alertsSection}>
+              {mockWeatherAlerts.map((alert) => (
+                <View
+                  key={alert.id}
+                  style={[styles.alertCard, { borderLeftColor: getAlertColor(alert.severity) }]}
+                >
+                  <View style={styles.alertHeader}>
+                    <IconSymbol
+                      name={getAlertIcon(alert.type) as any}
+                      size={24}
+                      color={getAlertColor(alert.severity)}
+                    />
+                    <View style={styles.alertTitleContainer}>
+                      <Text style={styles.alertTitle}>{alert.title}</Text>
+                      <Text style={[styles.alertSeverity, { color: getAlertColor(alert.severity) }]}>
+                        {alert.severity.toUpperCase()}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={styles.alertDescription}>{alert.description}</Text>
+                  <Text style={styles.alertTime}>
+                    Until {alert.endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* Weather Radar */}
+          <View style={styles.radarCard}>
+            <View style={styles.radarHeader}>
+              <IconSymbol name="cloud.bolt.rain.fill" size={28} color={colors.primary} />
+              <Text style={styles.radarTitle}>Weather Radar</Text>
+            </View>
+            <View style={styles.radarPlaceholder}>
+              <IconSymbol name="map.fill" size={48} color={colors.textSecondary} />
+              <Text style={styles.radarPlaceholderText}>
+                Weather radar visualization coming soon
+              </Text>
+              <Text style={styles.radarPlaceholderSubtext}>
+                Real-time precipitation and storm tracking
+              </Text>
+            </View>
+          </View>
 
           {/* Current Weather */}
           <View style={styles.currentWeather}>
@@ -237,6 +307,21 @@ export default function WeatherScreen() {
               </View>
             </View>
           </View>
+
+          {/* Historical Weather */}
+          <View style={styles.historicalCard}>
+            <View style={styles.historicalHeader}>
+              <IconSymbol name="calendar" size={24} color={colors.primary} />
+              <Text style={styles.historicalTitle}>Historical Weather</Text>
+            </View>
+            <Text style={styles.historicalSubtitle}>
+              View past weather data for this location
+            </Text>
+            <Pressable style={styles.historicalButton}>
+              <Text style={styles.historicalButtonText}>View Historical Data</Text>
+              <IconSymbol name="chevron.right" size={16} color={colors.primary} />
+            </Pressable>
+          </View>
         </ScrollView>
       </View>
     </>
@@ -291,6 +376,86 @@ const styles = StyleSheet.create({
   },
   trackMilesButtonIOS: {
     padding: 4,
+  },
+  alertsSection: {
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'ios' ? 0 : 16,
+    marginBottom: 16,
+  },
+  alertCard: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    boxShadow: `0px 2px 8px ${colors.shadow}`,
+    elevation: 3,
+  },
+  alertHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 8,
+  },
+  alertTitleContainer: {
+    flex: 1,
+  },
+  alertTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 2,
+  },
+  alertSeverity: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  alertDescription: {
+    fontSize: 14,
+    color: colors.text,
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  alertTime: {
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  radarCard: {
+    backgroundColor: colors.card,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 12,
+    padding: 16,
+    boxShadow: `0px 2px 8px ${colors.shadow}`,
+    elevation: 3,
+  },
+  radarHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
+  radarTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  radarPlaceholder: {
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  radarPlaceholderText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  radarPlaceholderSubtext: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 4,
+    textAlign: 'center',
   },
   currentWeather: {
     backgroundColor: colors.card,
@@ -444,6 +609,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 20,
     marginHorizontal: 16,
+    marginBottom: 16,
     flexDirection: 'row',
     justifyContent: 'space-around',
     boxShadow: `0px 2px 8px ${colors.shadow}`,
@@ -462,6 +628,43 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: colors.text,
+  },
+  historicalCard: {
+    backgroundColor: colors.card,
+    marginHorizontal: 16,
+    borderRadius: 12,
+    padding: 16,
+    boxShadow: `0px 2px 8px ${colors.shadow}`,
+    elevation: 3,
+  },
+  historicalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 8,
+  },
+  historicalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  historicalSubtitle: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 16,
+  },
+  historicalButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.background,
+    padding: 12,
+    borderRadius: 8,
+  },
+  historicalButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
   },
   headerButton: {
     padding: 4,
