@@ -8,11 +8,22 @@ import React, { useState } from 'react';
 import LandmarkModal from '@/components/LandmarkModal';
 import { IconSymbol } from '@/components/IconSymbol';
 import { Landmark } from '@/types/Landmark';
+import MapFeatureCard from '@/components/MapFeatureCard';
+import {
+  mockSkiResorts,
+  mockNationalForests,
+  mockStateForests,
+  mockCampgrounds,
+  mockWildlifeManagementAreas,
+} from '@/data/mockMapFeatures';
+
+type FilterType = 'all' | 'ski-resorts' | 'forests' | 'campgrounds' | 'wildlife' | 'landmarks';
 
 export default function MapScreen() {
   const router = useRouter();
   const [landmarks, setLandmarks] = useState<Landmark[]>(mockLandmarks);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
 
   const handleAddLandmark = () => {
     setIsModalVisible(true);
@@ -27,11 +38,12 @@ export default function MapScreen() {
     const newLandmark: Landmark = {
       id: Date.now().toString(),
       ...landmarkData,
-      coordinates: {
-        latitude: 39.7392 + (Math.random() - 0.5) * 0.1,
-        longitude: -104.9903 + (Math.random() - 0.5) * 0.1,
+      latitude: 39.7392 + (Math.random() - 0.5) * 0.1,
+      longitude: -104.9903 + (Math.random() - 0.5) * 0.1,
+      createdBy: {
+        id: 'current-user',
+        name: 'Current User',
       },
-      createdBy: 'Current User',
       createdAt: new Date(),
     };
 
@@ -42,16 +54,16 @@ export default function MapScreen() {
 
   const getLandmarkIcon = (category: string) => {
     switch (category) {
-      case 'fishing':
+      case 'fishing-spot':
         return 'fish.fill';
-      case 'hunting':
+      case 'hunting-area':
         return 'scope';
       case 'camping':
         return 'tent.fill';
-      case 'hiking':
+      case 'trail':
         return 'figure.hiking';
-      case 'other':
-        return 'mappin.circle.fill';
+      case 'viewpoint':
+        return 'eye.fill';
       default:
         return 'mappin.circle.fill';
     }
@@ -63,7 +75,7 @@ export default function MapScreen() {
         return 'globe';
       case 'followers':
         return 'person.2.fill';
-      case 'private':
+      case 'only-me':
         return 'lock.fill';
       default:
         return 'lock.fill';
@@ -98,6 +110,21 @@ export default function MapScreen() {
       <IconSymbol name="map.fill" color={colors.primary} size={24} />
     </Pressable>
   );
+
+  const filters: { type: FilterType; label: string; icon: string; count: number }[] = [
+    { type: 'all', label: 'All', icon: 'map.fill', count: mockSkiResorts.length + mockNationalForests.length + mockStateForests.length + mockCampgrounds.length + mockWildlifeManagementAreas.length + landmarks.length },
+    { type: 'ski-resorts', label: 'Ski Resorts', icon: 'snowflake', count: mockSkiResorts.length },
+    { type: 'forests', label: 'Forests', icon: 'tree.fill', count: mockNationalForests.length + mockStateForests.length },
+    { type: 'campgrounds', label: 'Campgrounds', icon: 'tent.fill', count: mockCampgrounds.length },
+    { type: 'wildlife', label: 'Wildlife Areas', icon: 'pawprint.fill', count: mockWildlifeManagementAreas.length },
+    { type: 'landmarks', label: 'My Landmarks', icon: 'mappin.circle.fill', count: landmarks.length },
+  ];
+
+  const shouldShowSkiResorts = activeFilter === 'all' || activeFilter === 'ski-resorts';
+  const shouldShowForests = activeFilter === 'all' || activeFilter === 'forests';
+  const shouldShowCampgrounds = activeFilter === 'all' || activeFilter === 'campgrounds';
+  const shouldShowWildlife = activeFilter === 'all' || activeFilter === 'wildlife';
+  const shouldShowLandmarks = activeFilter === 'all' || activeFilter === 'landmarks';
 
   return (
     <>
@@ -135,64 +162,194 @@ export default function MapScreen() {
           )}
 
           <View style={styles.header}>
-            <Text style={styles.title}>Interactive Maps</Text>
+            <Text style={styles.title}>Outdoor Recreation Map</Text>
             <Text style={styles.subtitle}>
               Note: react-native-maps is not currently supported in Natively. 
-              This is a placeholder showing map features.
+              This is a comprehensive list of outdoor recreation areas.
             </Text>
           </View>
 
           <View style={styles.mapPlaceholder}>
             <IconSymbol name="map.fill" size={64} color={colors.textSecondary} />
-            <Text style={styles.placeholderText}>Map View</Text>
+            <Text style={styles.placeholderText}>Interactive Map View</Text>
             <Text style={styles.placeholderSubtext}>
-              Interactive map with satellite imagery, topographic lines, and property boundaries
+              Ski resorts, forests, campgrounds, wildlife areas, and custom landmarks
             </Text>
           </View>
 
-          <Pressable style={styles.addButton} onPress={handleAddLandmark}>
-            <IconSymbol name="plus.circle.fill" size={24} color="#ffffff" />
-            <Text style={styles.addButtonText}>Add Landmark</Text>
-          </Pressable>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Map Features</Text>
-            <FeatureItem icon="map.fill" text="High-resolution satellite imagery" />
-            <FeatureItem icon="mountain.2.fill" text="Topographic contour lines" />
-            <FeatureItem icon="square.dashed" text="BLM and National Forest boundaries" />
-            <FeatureItem icon="house.fill" text="Private property lines" />
-            <FeatureItem icon="figure.walk" text="Trail overlays from OpenStreetMap" />
-            <FeatureItem icon="mappin.circle.fill" text="Custom markers with privacy controls" />
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Your Landmarks ({landmarks.length})</Text>
-            {landmarks.map((landmark) => (
-              <View key={landmark.id} style={styles.landmarkCard}>
-                <View style={styles.landmarkHeader}>
-                  <IconSymbol
-                    name={getLandmarkIcon(landmark.category) as any}
-                    size={24}
-                    color={colors.primary}
-                  />
-                  <View style={styles.landmarkInfo}>
-                    <Text style={styles.landmarkTitle}>{landmark.title}</Text>
-                    <Text style={styles.landmarkDescription}>{landmark.description}</Text>
-                  </View>
-                  <IconSymbol
-                    name={getVisibilityIcon(landmark.visibility) as any}
-                    size={20}
-                    color={colors.textSecondary}
-                  />
-                </View>
-                <View style={styles.landmarkFooter}>
-                  <Text style={styles.landmarkCategory}>{landmark.category}</Text>
-                  <Text style={styles.landmarkCoords}>
-                    {landmark.coordinates.latitude.toFixed(4)}, {landmark.coordinates.longitude.toFixed(4)}
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            style={styles.filterContainer}
+            contentContainerStyle={styles.filterContent}
+          >
+            {filters.map((filter) => (
+              <Pressable
+                key={filter.type}
+                style={[
+                  styles.filterButton,
+                  activeFilter === filter.type && styles.filterButtonActive,
+                ]}
+                onPress={() => setActiveFilter(filter.type)}
+              >
+                <IconSymbol
+                  name={filter.icon as any}
+                  size={18}
+                  color={activeFilter === filter.type ? '#ffffff' : colors.text}
+                />
+                <Text
+                  style={[
+                    styles.filterButtonText,
+                    activeFilter === filter.type && styles.filterButtonTextActive,
+                  ]}
+                >
+                  {filter.label}
+                </Text>
+                <View
+                  style={[
+                    styles.filterBadge,
+                    activeFilter === filter.type && styles.filterBadgeActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.filterBadgeText,
+                      activeFilter === filter.type && styles.filterBadgeTextActive,
+                    ]}
+                  >
+                    {filter.count}
                   </Text>
                 </View>
-              </View>
+              </Pressable>
             ))}
+          </ScrollView>
+
+          <Pressable style={styles.addButton} onPress={handleAddLandmark}>
+            <IconSymbol name="plus.circle.fill" size={24} color="#ffffff" />
+            <Text style={styles.addButtonText}>Add Personal Landmark</Text>
+          </Pressable>
+
+          {shouldShowSkiResorts && mockSkiResorts.length > 0 && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <IconSymbol name="snowflake" size={24} color="#4A90E2" />
+                <Text style={styles.sectionTitle}>Ski Resorts ({mockSkiResorts.length})</Text>
+              </View>
+              {mockSkiResorts.map((resort) => (
+                <MapFeatureCard
+                  key={resort.id}
+                  type="ski-resort"
+                  data={resort}
+                />
+              ))}
+            </View>
+          )}
+
+          {shouldShowForests && (mockNationalForests.length > 0 || mockStateForests.length > 0) && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <IconSymbol name="tree.fill" size={24} color="#2ECC71" />
+                <Text style={styles.sectionTitle}>
+                  National & State Forests ({mockNationalForests.length + mockStateForests.length})
+                </Text>
+              </View>
+              {mockNationalForests.map((forest) => (
+                <MapFeatureCard
+                  key={forest.id}
+                  type="forest"
+                  data={forest}
+                />
+              ))}
+              {mockStateForests.map((forest) => (
+                <MapFeatureCard
+                  key={forest.id}
+                  type="forest"
+                  data={forest}
+                />
+              ))}
+            </View>
+          )}
+
+          {shouldShowCampgrounds && mockCampgrounds.length > 0 && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <IconSymbol name="tent.fill" size={24} color="#E67E22" />
+                <Text style={styles.sectionTitle}>Campgrounds ({mockCampgrounds.length})</Text>
+              </View>
+              {mockCampgrounds.map((campground) => (
+                <MapFeatureCard
+                  key={campground.id}
+                  type="campground"
+                  data={campground}
+                />
+              ))}
+            </View>
+          )}
+
+          {shouldShowWildlife && mockWildlifeManagementAreas.length > 0 && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <IconSymbol name="pawprint.fill" size={24} color="#9B59B6" />
+                <Text style={styles.sectionTitle}>
+                  Wildlife Management Areas ({mockWildlifeManagementAreas.length})
+                </Text>
+              </View>
+              {mockWildlifeManagementAreas.map((wma) => (
+                <MapFeatureCard
+                  key={wma.id}
+                  type="wildlife-management-area"
+                  data={wma}
+                />
+              ))}
+            </View>
+          )}
+
+          {shouldShowLandmarks && landmarks.length > 0 && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <IconSymbol name="mappin.circle.fill" size={24} color={colors.primary} />
+                <Text style={styles.sectionTitle}>Your Landmarks ({landmarks.length})</Text>
+              </View>
+              {landmarks.map((landmark) => (
+                <View key={landmark.id} style={styles.landmarkCard}>
+                  <View style={styles.landmarkHeader}>
+                    <IconSymbol
+                      name={getLandmarkIcon(landmark.category || 'other') as any}
+                      size={24}
+                      color={colors.primary}
+                    />
+                    <View style={styles.landmarkInfo}>
+                      <Text style={styles.landmarkTitle}>{landmark.title}</Text>
+                      <Text style={styles.landmarkDescription}>{landmark.description}</Text>
+                    </View>
+                    <IconSymbol
+                      name={getVisibilityIcon(landmark.visibility) as any}
+                      size={20}
+                      color={colors.textSecondary}
+                    />
+                  </View>
+                  <View style={styles.landmarkFooter}>
+                    <Text style={styles.landmarkCategory}>
+                      {landmark.category?.replace('-', ' ') || 'other'}
+                    </Text>
+                    <Text style={styles.landmarkCoords}>
+                      {landmark.latitude.toFixed(4)}, {landmark.longitude.toFixed(4)}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+
+          <View style={styles.legendSection}>
+            <Text style={styles.legendTitle}>Map Legend</Text>
+            <View style={styles.legendGrid}>
+              <LegendItem icon="snowflake" label="Ski Resorts" color="#4A90E2" />
+              <LegendItem icon="tree.fill" label="Forests" color="#2ECC71" />
+              <LegendItem icon="tent.fill" label="Campgrounds" color="#E67E22" />
+              <LegendItem icon="pawprint.fill" label="Wildlife Areas" color="#9B59B6" />
+              <LegendItem icon="mappin.circle.fill" label="Your Landmarks" color={colors.primary} />
+            </View>
           </View>
         </ScrollView>
 
@@ -208,11 +365,13 @@ export default function MapScreen() {
   );
 }
 
-function FeatureItem({ icon, text }: { icon: string; text: string }) {
+function LegendItem({ icon, label, color }: { icon: string; label: string; color: string }) {
   return (
-    <View style={styles.featureItem}>
-      <IconSymbol name={icon as any} size={20} color={colors.primary} />
-      <Text style={styles.featureText}>{text}</Text>
+    <View style={styles.legendItem}>
+      <View style={[styles.legendIcon, { backgroundColor: color + '20' }]}>
+        <IconSymbol name={icon as any} size={16} color={color} />
+      </View>
+      <Text style={styles.legendLabel}>{label}</Text>
     </View>
   );
 }
@@ -264,7 +423,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
-    minHeight: 250,
+    minHeight: 200,
     boxShadow: `0px 2px 8px ${colors.shadow}`,
     elevation: 3,
   },
@@ -279,6 +438,56 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 8,
+  },
+  filterContainer: {
+    marginBottom: 16,
+    maxHeight: 50,
+  },
+  filterContent: {
+    gap: 8,
+    paddingRight: 16,
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: colors.card,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  filterButtonActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  filterButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  filterButtonTextActive: {
+    color: '#ffffff',
+  },
+  filterBadge: {
+    backgroundColor: colors.background,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    minWidth: 24,
+    alignItems: 'center',
+  },
+  filterBadgeActive: {
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  filterBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  filterBadgeTextActive: {
+    color: '#ffffff',
   },
   addButton: {
     backgroundColor: colors.primary,
@@ -300,22 +509,16 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 24,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '700',
     color: colors.text,
-    marginBottom: 12,
-  },
-  featureItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    gap: 12,
-  },
-  featureText: {
-    fontSize: 16,
-    color: colors.text,
-    flex: 1,
   },
   landmarkCard: {
     backgroundColor: colors.card,
@@ -362,6 +565,43 @@ const styles = StyleSheet.create({
   landmarkCoords: {
     fontSize: 12,
     color: colors.textSecondary,
+  },
+  legendSection: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 8,
+    boxShadow: `0px 2px 8px ${colors.shadow}`,
+    elevation: 3,
+  },
+  legendTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 16,
+  },
+  legendGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    width: '45%',
+  },
+  legendIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  legendLabel: {
+    fontSize: 13,
+    color: colors.text,
+    flex: 1,
   },
   headerButton: {
     padding: 4,
