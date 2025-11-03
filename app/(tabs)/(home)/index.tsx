@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { FlatList, StyleSheet, View, Text, Pressable, Platform } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import ActivityFilter from '@/components/ActivityFilter';
@@ -10,11 +10,16 @@ import { mockPosts } from '@/data/mockPosts';
 import { ActivityType } from '@/types/Post';
 
 export default function HomeScreen() {
+  const router = useRouter();
   const [selectedActivity, setSelectedActivity] = useState<ActivityType>('all');
 
   const filteredPosts = selectedActivity === 'all' 
     ? mockPosts 
     : mockPosts.filter(post => post.activity === selectedActivity);
+
+  const handleCreatePost = () => {
+    router.push('/(tabs)/(home)/create-post');
+  };
 
   const renderHeader = () => (
     <View style={styles.headerContainer}>
@@ -30,7 +35,7 @@ export default function HomeScreen() {
   );
 
   const renderHeaderRight = () => (
-    <Pressable style={styles.headerButton}>
+    <Pressable style={styles.headerButton} onPress={handleCreatePost}>
       <IconSymbol name="plus.circle.fill" color={colors.primary} size={28} />
     </Pressable>
   );
@@ -65,6 +70,13 @@ export default function HomeScreen() {
           ]}
           showsVerticalScrollIndicator={false}
         />
+        
+        {/* Floating Action Button for Create Post */}
+        {Platform.OS !== 'ios' && (
+          <Pressable style={styles.fab} onPress={handleCreatePost}>
+            <IconSymbol name="plus" color="#ffffff" size={28} />
+          </Pressable>
+        )}
       </View>
     </>
   );
@@ -105,5 +117,18 @@ const styles = StyleSheet.create({
   },
   headerButton: {
     padding: 4,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 90,
+    right: 20,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: `0px 4px 12px ${colors.shadow}`,
+    elevation: 8,
   },
 });
