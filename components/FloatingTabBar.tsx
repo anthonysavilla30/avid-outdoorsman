@@ -35,8 +35,8 @@ interface FloatingTabBarProps {
 
 export default function FloatingTabBar({
   tabs,
-  containerWidth = 360,
-  borderRadius = 24,
+  containerWidth = 380,
+  borderRadius = 28,
   bottomMargin = 20,
 }: FloatingTabBarProps) {
   const router = useRouter();
@@ -90,8 +90,8 @@ export default function FloatingTabBar({
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
       <View style={[styles.container, { marginBottom: bottomMargin }]}>
         <BlurView
-          intensity={80}
-          tint="light"
+          intensity={90}
+          tint="dark"
           style={[
             styles.tabBar,
             {
@@ -116,10 +116,11 @@ export default function FloatingTabBar({
                   <View style={styles.centerButton}>
                     <IconSymbol
                       name={tab.icon as any}
-                      size={32}
+                      size={36}
                       color="#ffffff"
                     />
                   </View>
+                  <Text style={styles.centerLabel}>{tab.label}</Text>
                 </TouchableOpacity>
               );
             }
@@ -133,13 +134,13 @@ export default function FloatingTabBar({
               >
                 <IconSymbol
                   name={tab.icon as any}
-                  size={24}
-                  color={isActive ? colors.primary : colors.textSecondary}
+                  size={28}
+                  color={isActive ? colors.primary : colors.text}
                 />
                 <Text
                   style={[
                     styles.label,
-                    { color: isActive ? colors.primary : colors.textSecondary },
+                    { color: isActive ? colors.primary : colors.text },
                   ]}
                 >
                   {tab.label}
@@ -169,31 +170,41 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    boxShadow: `0px 4px 12px ${colors.shadow}`,
-    elevation: 8,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(26, 26, 26, 0.95)',
+    boxShadow: `0px 4px 16px ${colors.shadow}`,
+    elevation: 10,
     overflow: 'visible',
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   tab: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
-    gap: 4,
+    paddingVertical: 10,
+    gap: 6,
     zIndex: 2,
   },
   label: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  centerLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.text,
+    marginTop: 4,
+    letterSpacing: 0.3,
   },
   indicator: {
     position: 'absolute',
-    height: '80%',
-    backgroundColor: colors.background,
-    borderRadius: 16,
-    top: '10%',
+    height: '75%',
+    backgroundColor: 'rgba(52, 152, 219, 0.15)',
+    borderRadius: 20,
+    top: '12.5%',
     zIndex: 1,
   },
   centerButtonContainer: {
@@ -203,14 +214,16 @@ const styles = StyleSheet.create({
     zIndex: 3,
   },
   centerButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -28,
-    boxShadow: `0px 4px 12px ${colors.shadow}`,
-    elevation: 8,
+    marginTop: -32,
+    boxShadow: `0px 6px 16px ${colors.shadow}`,
+    elevation: 12,
+    borderWidth: 3,
+    borderColor: colors.background,
   },
 });

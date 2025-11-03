@@ -82,6 +82,12 @@ function getTimeAgo(date: Date): string {
 export default function MessagesScreen() {
   const router = useRouter();
 
+  const handleComposeMessage = () => {
+    console.log('Compose new message');
+    // In a real app, this would navigate to a compose message screen
+    // router.push('/(tabs)/messages/compose');
+  };
+
   const renderMessage = ({ item }: { item: Message }) => (
     <Pressable style={styles.messageCard}>
       <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
@@ -98,6 +104,15 @@ export default function MessagesScreen() {
     </Pressable>
   );
 
+  const renderHeader = () => (
+    <View style={styles.headerContent}>
+      <Pressable style={styles.composeButton} onPress={handleComposeMessage}>
+        <IconSymbol name="square.and.pencil" color="#ffffff" size={20} />
+        <Text style={styles.composeButtonText}>Compose Message</Text>
+      </Pressable>
+    </View>
+  );
+
   return (
     <>
       <Stack.Screen
@@ -112,6 +127,7 @@ export default function MessagesScreen() {
           data={mockMessages}
           renderItem={renderMessage}
           keyExtractor={(item) => item.id}
+          ListHeaderComponent={renderHeader}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
         />
@@ -127,6 +143,26 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 16,
+  },
+  headerContent: {
+    marginBottom: 16,
+  },
+  composeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: colors.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    boxShadow: `0px 4px 12px ${colors.shadow}`,
+    elevation: 4,
+  },
+  composeButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
   },
   messageCard: {
     backgroundColor: colors.card,

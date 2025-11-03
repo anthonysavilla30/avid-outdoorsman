@@ -13,6 +13,10 @@ export default function ProfileScreen() {
     router.push('/(tabs)/map');
   };
 
+  const handleTrackMilesPress = () => {
+    console.log('Track Miles pressed - already on profile');
+  };
+
   const handleMessagesPress = () => {
     router.push('/(tabs)/messages');
   };
@@ -33,9 +37,14 @@ export default function ProfileScreen() {
   );
 
   const renderHeaderLeft = () => (
-    <Pressable style={styles.headerButton} onPress={handleMapPress}>
-      <IconSymbol name="map.fill" color={colors.primary} size={24} />
-    </Pressable>
+    <View style={styles.headerButtonGroup}>
+      <Pressable style={styles.headerButton} onPress={handleMapPress}>
+        <IconSymbol name="map.fill" color={colors.primary} size={24} />
+      </Pressable>
+      <Pressable style={styles.trackMilesButtonIOS} onPress={handleTrackMilesPress}>
+        <IconSymbol name="figure.run" color={colors.primary} size={20} />
+      </Pressable>
+    </View>
   );
 
   return (
@@ -59,9 +68,15 @@ export default function ProfileScreen() {
         >
           {Platform.OS !== 'ios' && (
             <View style={styles.topBar}>
-              <Pressable style={styles.topButton} onPress={handleMapPress}>
-                <IconSymbol name="map.fill" color={colors.text} size={24} />
-              </Pressable>
+              <View style={styles.topLeft}>
+                <Pressable style={styles.topButton} onPress={handleMapPress}>
+                  <IconSymbol name="map.fill" color={colors.text} size={24} />
+                </Pressable>
+                <Pressable style={styles.trackMilesButton} onPress={handleTrackMilesPress}>
+                  <IconSymbol name="figure.run" color="#ffffff" size={20} />
+                  <Text style={styles.trackMilesText}>Track Miles</Text>
+                </Pressable>
+              </View>
               <View style={styles.topRight}>
                 <Pressable style={styles.topButton} onPress={handleMessagesPress}>
                   <IconSymbol name="message.fill" color={colors.text} size={24} />
@@ -126,6 +141,30 @@ export default function ProfileScreen() {
               <StatRow icon="location.fill" label="Miles Traveled" value="1,247" />
               <StatRow icon="calendar" label="Days Outdoors" value="89" />
               <StatRow icon="star.fill" label="Reviews Written" value="45" />
+            </View>
+          </View>
+
+          {/* Mile Tracking Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Mile Tracking</Text>
+            <View style={styles.card}>
+              <View style={styles.mileTrackingHeader}>
+                <IconSymbol name="figure.run" size={32} color={colors.primary} />
+                <View style={styles.mileTrackingInfo}>
+                  <Text style={styles.mileTrackingTitle}>Track Your Miles</Text>
+                  <Text style={styles.mileTrackingSubtitle}>
+                    Start tracking your outdoor adventures and compete on the leaderboard!
+                  </Text>
+                </View>
+              </View>
+              <Pressable style={styles.startTrackingButton}>
+                <IconSymbol name="play.fill" color="#ffffff" size={20} />
+                <Text style={styles.startTrackingText}>Start Tracking</Text>
+              </Pressable>
+              <View style={styles.leaderboardPreview}>
+                <Text style={styles.leaderboardTitle}>Leaderboard Preview</Text>
+                <Text style={styles.leaderboardSubtitle}>Coming soon: Compete with others and win prizes!</Text>
+              </View>
             </View>
           </View>
 
@@ -202,6 +241,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingBottom: 16,
+    backgroundColor: colors.card,
+  },
+  topLeft: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
   },
   topButton: {
     padding: 8,
@@ -209,6 +254,23 @@ const styles = StyleSheet.create({
   topRight: {
     flexDirection: 'row',
     gap: 8,
+  },
+  trackMilesButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  trackMilesText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  trackMilesButtonIOS: {
+    padding: 4,
   },
   profileHeader: {
     backgroundColor: colors.card,
@@ -337,6 +399,59 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: colors.text,
+  },
+  mileTrackingHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    marginBottom: 16,
+  },
+  mileTrackingInfo: {
+    flex: 1,
+  },
+  mileTrackingTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  mileTrackingSubtitle: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    lineHeight: 20,
+  },
+  startTrackingButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: colors.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  startTrackingText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  leaderboardPreview: {
+    backgroundColor: colors.background,
+    borderRadius: 8,
+    padding: 16,
+    alignItems: 'center',
+  },
+  leaderboardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  leaderboardSubtitle: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
   settingRow: {
     flexDirection: 'row',

@@ -9,13 +9,39 @@ import PostCard from '@/components/PostCard';
 import { mockPosts } from '@/data/mockPosts';
 import { ActivityType } from '@/types/Post';
 
+type RadiusFilter = 'all' | '5-10' | '10-20' | '20-50' | '50-100';
+
 export default function HomeScreen() {
   const router = useRouter();
   const [selectedActivity, setSelectedActivity] = useState<ActivityType>('all');
+  const [selectedRadius, setSelectedRadius] = useState<RadiusFilter>('all');
+  const [showRadiusFilter, setShowRadiusFilter] = useState(false);
 
-  const filteredPosts = selectedActivity === 'all' 
-    ? mockPosts 
-    : mockPosts.filter(post => post.activity === selectedActivity);
+  const filteredPosts = mockPosts.filter(post => {
+    // Filter by activity
+    if (selectedActivity !== 'all' && post.activity !== selectedActivity) {
+      return false;
+    }
+    
+    // Filter by radius (mock implementation - in real app would use actual location)
+    if (selectedRadius !== 'all') {
+      // Mock distance calculation - in real app would use user's location
+      const mockDistance = Math.random() * 100;
+      
+      switch (selectedRadius) {
+        case '5-10':
+          return mockDistance >= 5 && mockDistance <= 10;
+        case '10-20':
+          return mockDistance >= 10 && mockDistance <= 20;
+        case '20-50':
+          return mockDistance >= 20 && mockDistance <= 50;
+        case '50-100':
+          return mockDistance >= 50 && mockDistance <= 100;
+      }
+    }
+    
+    return true;
+  });
 
   const handleCreatePost = () => {
     router.push('/(tabs)/(home)/create-post');
@@ -23,6 +49,10 @@ export default function HomeScreen() {
 
   const handleMapPress = () => {
     router.push('/(tabs)/map');
+  };
+
+  const handleTrackMilesPress = () => {
+    router.push('/(tabs)/profile');
   };
 
   const handleMessagesPress = () => {
@@ -33,13 +63,27 @@ export default function HomeScreen() {
     router.push('/(tabs)/notifications');
   };
 
+  const radiusOptions: { value: RadiusFilter; label: string }[] = [
+    { value: 'all', label: 'All Posts' },
+    { value: '5-10', label: '5-10 miles' },
+    { value: '10-20', label: '10-20 miles' },
+    { value: '20-50', label: '20-50 miles' },
+    { value: '50-100', label: '50-100 miles' },
+  ];
+
   const renderHeader = () => (
     <View style={styles.headerContainer}>
       {Platform.OS !== 'ios' && (
         <View style={styles.topBar}>
-          <Pressable style={styles.topButton} onPress={handleMapPress}>
-            <IconSymbol name="map.fill" color={colors.text} size={24} />
-          </Pressable>
+          <View style={styles.topLeft}>
+            <Pressable style={styles.topButton} onPress={handleMapPress}>
+              <IconSymbol name="map.fill" color={colors.text} size={24} />
+            </Pressable>
+            <Pressable style={styles.trackMilesButton} onPress={handleTrackMilesPress}>
+              <IconSymbol name="figure.run" color="#ffffff" size={20} />
+              <Text style={styles.trackMilesText}>Track Miles</Text>
+            </Pressable>
+          </View>
           <View style={styles.topRight}>
             <Pressable style={styles.topButton} onPress={handleMessagesPress}>
               <IconSymbol name="message.fill" color={colors.text} size={24} />
@@ -54,6 +98,55 @@ export default function HomeScreen() {
         <Text style={styles.title}>Avid Outdoorsman</Text>
         <Text style={styles.subtitle}>Real conditions. Right now.</Text>
       </View>
+      
+      {/* Radius Filter */}
+      <View style={styles.radiusFilterContainer}>
+        <Pressable 
+          style={styles.radiusFilterButton}
+          onPress={() => setShowRadiusFilter(!showRadiusFilter)}
+        >
+          <IconSymbol name="location.fill" color={colors.primary} size={20} />
+          <Text style={styles.radiusFilterButtonText}>
+            {radiusOptions.find(opt => opt.value === selectedRadius)?.label || 'All Posts'}
+          </Text>
+          <IconSymbol 
+            name={showRadiusFilter ? "chevron.up" : "chevron.down"} 
+            color={colors.text} 
+            size={16} 
+          />
+        </Pressable>
+        
+        {showRadiusFilter && (
+          <View style={styles.radiusDropdown}>
+            {radiusOptions.map((option) => (
+              <Pressable
+                key={option.value}
+                style={[
+                  styles.radiusOption,
+                  selectedRadius === option.value && styles.radiusOptionActive,
+                ]}
+                onPress={() => {
+                  setSelectedRadius(option.value);
+                  setShowRadiusFilter(false);
+                }}
+              >
+                <Text
+                  style={[
+                    styles.radiusOptionText,
+                    selectedRadius === option.value && styles.radiusOptionTextActive,
+                  ]}
+                >
+                  {option.label}
+                </Text>
+                {selectedRadius === option.value && (
+                  <IconSymbol name="checkmark" color={colors.primary} size={20} />
+                )}
+              </Pressable>
+            ))}
+          </View>
+        )}
+      </View>
+      
       <ActivityFilter
         selectedActivity={selectedActivity}
         onSelectActivity={setSelectedActivity}
@@ -73,9 +166,14 @@ export default function HomeScreen() {
   );
 
   const renderHeaderLeft = () => (
-    <Pressable style={styles.headerButton} onPress={handleMapPress}>
-      <IconSymbol name="map.fill" color={colors.primary} size={24} />
-    </Pressable>
+    <View style={styles.headerButtonGroup}>
+      <Pressable style={styles.headerButton} onPress={handleMapPress}>
+        <IconSymbol name="map.fill" color={colors.primary} size={24} />
+      </Pressable>
+      <Pressable style={styles.trackMilesButtonIOS} onPress={handleTrackMilesPress}>
+        <IconSymbol name="figure.run" color={colors.primary} size={20} />
+      </Pressable>
+    </View>
   );
 
   return (
@@ -102,8 +200,6 @@ export default function HomeScreen() {
           ]}
           showsVerticalScrollIndicator={false}
         />
-        
-        {/* Floating Action Button for Create Post - Hidden since we have tab bar button now */}
       </View>
     </>
   );
@@ -134,6 +230,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 12,
   },
+  topLeft: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
   topButton: {
     padding: 8,
   },
@@ -141,9 +242,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
+  trackMilesButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  trackMilesText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  trackMilesButtonIOS: {
+    padding: 4,
+  },
   titleContainer: {
     paddingHorizontal: 16,
-    marginBottom: 8,
+    marginBottom: 12,
   },
   title: {
     fontSize: 28,
@@ -155,6 +273,56 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     fontWeight: '500',
+  },
+  radiusFilterContainer: {
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  radiusFilterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: colors.background,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  radiusFilterButtonText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  radiusDropdown: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  radiusOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  radiusOptionActive: {
+    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+  },
+  radiusOptionText: {
+    fontSize: 15,
+    color: colors.text,
+    fontWeight: '500',
+  },
+  radiusOptionTextActive: {
+    color: colors.primary,
+    fontWeight: '700',
   },
   headerButton: {
     padding: 4,

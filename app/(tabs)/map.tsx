@@ -86,6 +86,10 @@ export default function MapScreen() {
     router.push('/(tabs)/map');
   };
 
+  const handleTrackMilesPress = () => {
+    router.push('/(tabs)/profile');
+  };
+
   const handleMessagesPress = () => {
     router.push('/(tabs)/messages');
   };
@@ -106,9 +110,14 @@ export default function MapScreen() {
   );
 
   const renderHeaderLeft = () => (
-    <Pressable style={styles.headerButton} onPress={handleMapPress}>
-      <IconSymbol name="map.fill" color={colors.primary} size={24} />
-    </Pressable>
+    <View style={styles.headerButtonGroup}>
+      <Pressable style={styles.headerButton} onPress={handleMapPress}>
+        <IconSymbol name="map.fill" color={colors.primary} size={24} />
+      </Pressable>
+      <Pressable style={styles.trackMilesButtonIOS} onPress={handleTrackMilesPress}>
+        <IconSymbol name="figure.run" color={colors.primary} size={20} />
+      </Pressable>
+    </View>
   );
 
   const filters: { type: FilterType; label: string; icon: string; count: number }[] = [
@@ -147,9 +156,15 @@ export default function MapScreen() {
         >
           {Platform.OS !== 'ios' && (
             <View style={styles.topBar}>
-              <Pressable style={styles.topButton} onPress={handleMapPress}>
-                <IconSymbol name="map.fill" color={colors.text} size={24} />
-              </Pressable>
+              <View style={styles.topLeft}>
+                <Pressable style={styles.topButton} onPress={handleMapPress}>
+                  <IconSymbol name="map.fill" color={colors.text} size={24} />
+                </Pressable>
+                <Pressable style={styles.trackMilesButton} onPress={handleTrackMilesPress}>
+                  <IconSymbol name="figure.run" color="#ffffff" size={20} />
+                  <Text style={styles.trackMilesText}>Track Miles</Text>
+                </Pressable>
+              </View>
               <View style={styles.topRight}>
                 <Pressable style={styles.topButton} onPress={handleMessagesPress}>
                   <IconSymbol name="message.fill" color={colors.text} size={24} />
@@ -395,12 +410,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
+  topLeft: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
   topButton: {
     padding: 8,
   },
   topRight: {
     flexDirection: 'row',
     gap: 8,
+  },
+  trackMilesButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  trackMilesText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  trackMilesButtonIOS: {
+    padding: 4,
   },
   header: {
     marginBottom: 16,
