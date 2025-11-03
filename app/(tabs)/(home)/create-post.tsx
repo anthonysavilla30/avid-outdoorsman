@@ -10,6 +10,7 @@ import {
   Image,
   Platform,
   Alert,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
@@ -27,13 +28,20 @@ export default function CreatePostScreen() {
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [weather, setWeather] = useState('');
   const [difficulty, setDifficulty] = useState<'easy' | 'moderate' | 'hard'>('moderate');
+  const [showActivityDropdown, setShowActivityDropdown] = useState(false);
 
   const activities: { type: ActivityType; icon: string; label: string }[] = [
-    { type: 'fishing', icon: 'figure.fishing', label: 'Fishing' },
     { type: 'hunting', icon: 'scope', label: 'Hunting' },
+    { type: 'fishing', icon: 'figure.fishing', label: 'Angling' },
     { type: 'hiking', icon: 'figure.hiking', label: 'Hiking' },
     { type: 'camping', icon: 'tent.fill', label: 'Camping' },
+    { type: 'kayaking', icon: 'water.waves', label: 'Kayaking' },
+    { type: 'mountain-biking', icon: 'bicycle', label: 'Mountain Biking' },
+    { type: 'overlanding', icon: 'car.fill', label: 'Overlanding' },
+    { type: 'backpacking', icon: 'backpack.fill', label: 'Backpacking' },
   ];
+
+  const selectedActivityData = activities.find(a => a.type === selectedActivity) || activities[0];
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -131,32 +139,20 @@ export default function CreatePostScreen() {
           {/* Activity Type Selection */}
           <View style={styles.section}>
             <Text style={styles.label}>Activity Type</Text>
-            <View style={styles.activityGrid}>
-              {activities.map((activity) => (
-                <Pressable
-                  key={activity.type}
-                  style={[
-                    styles.activityButton,
-                    selectedActivity === activity.type && styles.activityButtonActive,
-                  ]}
-                  onPress={() => setSelectedActivity(activity.type)}
-                >
-                  <IconSymbol
-                    name={activity.icon as any}
-                    size={28}
-                    color={selectedActivity === activity.type ? '#ffffff' : colors.primary}
-                  />
-                  <Text
-                    style={[
-                      styles.activityLabel,
-                      selectedActivity === activity.type && styles.activityLabelActive,
-                    ]}
-                  >
-                    {activity.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
+            <Pressable
+              style={styles.dropdownButton}
+              onPress={() => setShowActivityDropdown(true)}
+            >
+              <View style={styles.dropdownContent}>
+                <IconSymbol
+                  name={selectedActivityData.icon as any}
+                  size={24}
+                  color={colors.primary}
+                />
+                <Text style={styles.dropdownText}>{selectedActivityData.label}</Text>
+              </View>
+              <IconSymbol name="chevron.down" size={20} color={colors.textSecondary} />
+            </Pressable>
           </View>
 
           {/* Content */}
@@ -279,6 +275,62 @@ export default function CreatePostScreen() {
 
           <View style={styles.bottomPadding} />
         </ScrollView>
+
+        {/* Activity Dropdown Modal */}
+        <Modal
+          visible={showActivityDropdown}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowActivityDropdown(false)}
+        >
+          <Pressable
+            style={styles.modalOverlay}
+            onPress={() => setShowActivityDropdown(false)}
+          >
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Select Activity Type</Text>
+                <Pressable onPress={() => setShowActivityDropdown(false)}>
+                  <IconSymbol name="xmark.circle.fill" size={28} color={colors.textSecondary} />
+                </Pressable>
+              </View>
+              <ScrollView style={styles.modalScroll}>
+                {activities.map((activity) => (
+                  <Pressable
+                    key={activity.type}
+                    style={[
+                      styles.activityOption,
+                      selectedActivity === activity.type && styles.activityOptionActive,
+                    ]}
+                    onPress={() => {
+                      setSelectedActivity(activity.type);
+                      setShowActivityDropdown(false);
+                    }}
+                  >
+                    <View style={styles.activityOptionContent}>
+                      <IconSymbol
+                        name={activity.icon as any}
+                        size={28}
+                        color={selectedActivity === activity.type ? colors.primary : colors.text}
+                      />
+                      <Text
+                        style={[
+                          styles.activityOptionText,
+                          selectedActivity === activity.type && styles.activityOptionTextActive,
+                        ]}
+                      >
+                        {activity.label}
+                      </Text>
+                    </View>
+                    {selectedActivity === activity.type && (
+                      <IconSymbol name="checkmark.circle.fill" size={24} color={colors.primary} />
+                    )}
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+          </Pressable>
+        </Modal>
       </SafeAreaView>
     </>
   );
@@ -320,33 +372,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 12,
   },
-  activityGrid: {
+  dropdownButton: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  activityButton: {
-    flex: 1,
-    minWidth: '45%',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
-    alignItems: 'center',
-    gap: 8,
     borderWidth: 2,
     borderColor: colors.border,
   },
-  activityButtonActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+  dropdownContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
-  activityLabel: {
-    fontSize: 14,
+  dropdownText: {
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text,
-  },
-  activityLabelActive: {
-    color: '#ffffff',
   },
   contentInput: {
     backgroundColor: colors.card,
@@ -444,5 +488,62 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 40,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    width: '100%',
+    maxWidth: 400,
+    maxHeight: '80%',
+    boxShadow: `0px 4px 16px ${colors.shadow}`,
+    elevation: 5,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  modalScroll: {
+    maxHeight: 400,
+  },
+  activityOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  activityOptionActive: {
+    backgroundColor: colors.primary + '10',
+  },
+  activityOptionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  activityOptionText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: colors.text,
+  },
+  activityOptionTextActive: {
+    fontWeight: '700',
+    color: colors.primary,
   },
 });

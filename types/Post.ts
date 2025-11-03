@@ -1,5 +1,5 @@
 
-export type ActivityType = 'hunting' | 'fishing' | 'hiking' | 'camping' | 'all';
+export type ActivityType = 'hunting' | 'fishing' | 'hiking' | 'camping' | 'kayaking' | 'mountain-biking' | 'overlanding' | 'backpacking' | 'all';
 
 export interface Post {
   id: string;

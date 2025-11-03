@@ -1,5 +1,5 @@
 
-import { View, Text, StyleSheet, ScrollView, Platform, Pressable, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Platform, Pressable, Alert, TextInput, Modal } from 'react-native';
 import { mockLandmarks } from '@/data/mockLandmarks';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, commonStyles } from '@/styles/commonStyles';
@@ -18,12 +18,23 @@ import {
 } from '@/data/mockMapFeatures';
 
 type FilterType = 'all' | 'ski-resorts' | 'forests' | 'campgrounds' | 'wildlife' | 'landmarks';
+type MapViewType = 'standard' | 'satellite' | 'hybrid';
 
 export default function MapScreen() {
   const router = useRouter();
   const [landmarks, setLandmarks] = useState<Landmark[]>(mockLandmarks);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const [mapViewType, setMapViewType] = useState<MapViewType>('standard');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showLayersModal, setShowLayersModal] = useState(false);
+  const [enabledLayers, setEnabledLayers] = useState({
+    contourLines: false,
+    blmBoundaries: false,
+    propertyLines: false,
+    trails: true,
+    waterSources: false,
+  });
 
   const handleAddLandmark = () => {
     setIsModalVisible(true);
@@ -50,6 +61,20 @@ export default function MapScreen() {
     setLandmarks([...landmarks, newLandmark]);
     setIsModalVisible(false);
     Alert.alert('Success', 'Landmark added successfully!');
+  };
+
+  const toggleLayer = (layer: keyof typeof enabledLayers) => {
+    setEnabledLayers(prev => ({
+      ...prev,
+      [layer]: !prev[layer],
+    }));
+  };
+
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      Alert.alert('Search', `Searching for: ${searchQuery}`);
+      console.log('Searching for location:', searchQuery);
+    }
   };
 
   const getLandmarkIcon = (category: string) => {
@@ -135,6 +160,20 @@ export default function MapScreen() {
   const shouldShowWildlife = activeFilter === 'all' || activeFilter === 'wildlife';
   const shouldShowLandmarks = activeFilter === 'all' || activeFilter === 'landmarks';
 
+  const mapViewOptions: { type: MapViewType; label: string; icon: string }[] = [
+    { type: 'standard', label: 'Standard', icon: 'map' },
+    { type: 'satellite', label: 'Satellite', icon: 'globe.americas.fill' },
+    { type: 'hybrid', label: 'Hybrid', icon: 'square.stack.3d.up.fill' },
+  ];
+
+  const layerOptions = [
+    { key: 'contourLines' as const, label: 'Contour Lines', icon: 'chart.line.uptrend.xyaxis', description: 'Topographic elevation lines' },
+    { key: 'blmBoundaries' as const, label: 'BLM Boundaries', icon: 'square.dashed', description: 'Bureau of Land Management areas' },
+    { key: 'propertyLines' as const, label: 'Property Lines', icon: 'square.split.2x2', description: 'Private property boundaries' },
+    { key: 'trails' as const, label: 'Trail Overlays', icon: 'figure.hiking', description: 'Hiking and biking trails' },
+    { key: 'waterSources' as const, label: 'Water Sources', icon: 'drop.fill', description: 'Rivers, lakes, and streams' },
+  ];
+
   return (
     <>
       {Platform.OS === 'ios' && (
@@ -184,11 +223,106 @@ export default function MapScreen() {
             </Text>
           </View>
 
+          {/* Location Search */}
+          <View style={styles.searchContainer}>
+            <View style={styles.searchInputContainer}>
+              <IconSymbol name="magnifyingglass" size={20} color={colors.textSecondary} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search location..."
+                placeholderTextColor={colors.textSecondary}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                onSubmitEditing={handleSearch}
+                returnKeyType="search"
+              />
+              {searchQuery.length > 0 && (
+                <Pressable onPress={() => setSearchQuery('')}>
+                  <IconSymbol name="xmark.circle.fill" size={20} color={colors.textSecondary} />
+                </Pressable>
+              )}
+            </View>
+            <Pressable style={styles.searchButton} onPress={handleSearch}>
+              <IconSymbol name="arrow.right.circle.fill" size={24} color="#ffffff" />
+            </Pressable>
+          </View>
+
+          {/* Map View Controls */}
+          <View style={styles.mapControlsRow}>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              style={styles.mapViewSelector}
+              contentContainerStyle={styles.mapViewContent}
+            >
+              {mapViewOptions.map((option) => (
+                <Pressable
+                  key={option.type}
+                  style={[
+                    styles.mapViewButton,
+                    mapViewType === option.type && styles.mapViewButtonActive,
+                  ]}
+                  onPress={() => setMapViewType(option.type)}
+                >
+                  <IconSymbol
+                    name={option.icon as any}
+                    size={20}
+                    color={mapViewType === option.type ? '#ffffff' : colors.text}
+                  />
+                  <Text
+                    style={[
+                      styles.mapViewText,
+                      mapViewType === option.type && styles.mapViewTextActive,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+            <Pressable 
+              style={styles.layersButton}
+              onPress={() => setShowLayersModal(true)}
+            >
+              <IconSymbol name="square.stack.3d.up.fill" size={20} color="#ffffff" />
+              <Text style={styles.layersButtonText}>Layers</Text>
+            </Pressable>
+          </View>
+
+          {/* Active Layers Indicator */}
+          {Object.values(enabledLayers).some(v => v) && (
+            <View style={styles.activeLayersContainer}>
+              <Text style={styles.activeLayersLabel}>Active Layers:</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View style={styles.activeLayersList}>
+                  {Object.entries(enabledLayers).map(([key, enabled]) => {
+                    if (!enabled) return null;
+                    const layer = layerOptions.find(l => l.key === key);
+                    if (!layer) return null;
+                    return (
+                      <View key={key} style={styles.activeLayerChip}>
+                        <IconSymbol name={layer.icon as any} size={14} color={colors.primary} />
+                        <Text style={styles.activeLayerText}>{layer.label}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              </ScrollView>
+            </View>
+          )}
+
           <View style={styles.mapPlaceholder}>
-            <IconSymbol name="map.fill" size={64} color={colors.textSecondary} />
-            <Text style={styles.placeholderText}>Interactive Map View</Text>
+            <IconSymbol 
+              name={mapViewType === 'satellite' ? 'globe.americas.fill' : 'map.fill'} 
+              size={64} 
+              color={colors.textSecondary} 
+            />
+            <Text style={styles.placeholderText}>
+              {mapViewType === 'satellite' ? 'Satellite View' : 
+               mapViewType === 'hybrid' ? 'Hybrid View' : 'Standard Map View'}
+            </Text>
             <Text style={styles.placeholderSubtext}>
-              Ski resorts, forests, campgrounds, wildlife areas, and custom landmarks
+              Interactive map with location search and custom layers
             </Text>
           </View>
 
@@ -375,6 +509,71 @@ export default function MapScreen() {
           latitude={39.7392}
           longitude={-104.9903}
         />
+
+        {/* Layers Modal */}
+        <Modal
+          visible={showLayersModal}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowLayersModal(false)}
+        >
+          <Pressable
+            style={styles.modalOverlay}
+            onPress={() => setShowLayersModal(false)}
+          >
+            <View style={styles.layersModalContent}>
+              <View style={styles.layersModalHeader}>
+                <Text style={styles.layersModalTitle}>Map Layers</Text>
+                <Pressable onPress={() => setShowLayersModal(false)}>
+                  <IconSymbol name="xmark.circle.fill" size={28} color={colors.textSecondary} />
+                </Pressable>
+              </View>
+              <ScrollView style={styles.layersModalScroll}>
+                {layerOptions.map((layer) => (
+                  <Pressable
+                    key={layer.key}
+                    style={styles.layerOption}
+                    onPress={() => toggleLayer(layer.key)}
+                  >
+                    <View style={styles.layerOptionLeft}>
+                      <View style={[
+                        styles.layerIconContainer,
+                        enabledLayers[layer.key] && styles.layerIconContainerActive
+                      ]}>
+                        <IconSymbol
+                          name={layer.icon as any}
+                          size={24}
+                          color={enabledLayers[layer.key] ? colors.primary : colors.text}
+                        />
+                      </View>
+                      <View style={styles.layerInfo}>
+                        <Text style={styles.layerLabel}>{layer.label}</Text>
+                        <Text style={styles.layerDescription}>{layer.description}</Text>
+                      </View>
+                    </View>
+                    <View style={[
+                      styles.layerToggle,
+                      enabledLayers[layer.key] && styles.layerToggleActive
+                    ]}>
+                      <View style={[
+                        styles.layerToggleThumb,
+                        enabledLayers[layer.key] && styles.layerToggleThumbActive
+                      ]} />
+                    </View>
+                  </Pressable>
+                ))}
+              </ScrollView>
+              <View style={styles.layersModalFooter}>
+                <Pressable
+                  style={styles.layersModalButton}
+                  onPress={() => setShowLayersModal(false)}
+                >
+                  <Text style={styles.layersModalButtonText}>Done</Text>
+                </Pressable>
+              </View>
+            </View>
+          </Pressable>
+        </Modal>
       </View>
     </>
   );
@@ -452,6 +651,117 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     lineHeight: 20,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  searchInputContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: colors.text,
+  },
+  searchButton: {
+    backgroundColor: colors.primary,
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: `0px 2px 8px ${colors.shadow}`,
+    elevation: 3,
+  },
+  mapControlsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  mapViewSelector: {
+    flex: 1,
+  },
+  mapViewContent: {
+    gap: 8,
+  },
+  mapViewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  mapViewButtonActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  mapViewText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  mapViewTextActive: {
+    color: '#ffffff',
+  },
+  layersButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: colors.accent,
+    boxShadow: `0px 2px 8px ${colors.shadow}`,
+    elevation: 3,
+  },
+  layersButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#ffffff',
+  },
+  activeLayersContainer: {
+    marginBottom: 16,
+  },
+  activeLayersLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    marginBottom: 8,
+  },
+  activeLayersList: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  activeLayerChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: colors.primary + '20',
+    borderWidth: 1,
+    borderColor: colors.primary + '40',
+  },
+  activeLayerText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.primary,
   },
   mapPlaceholder: {
     backgroundColor: colors.card,
@@ -647,5 +957,110 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     marginRight: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  layersModalContent: {
+    backgroundColor: colors.card,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '80%',
+    boxShadow: `0px -4px 16px ${colors.shadow}`,
+    elevation: 5,
+  },
+  layersModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  layersModalTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  layersModalScroll: {
+    maxHeight: 400,
+  },
+  layerOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  layerOptionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    flex: 1,
+  },
+  layerIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  layerIconContainerActive: {
+    backgroundColor: colors.primary + '20',
+  },
+  layerInfo: {
+    flex: 1,
+  },
+  layerLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  layerDescription: {
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
+  layerToggle: {
+    width: 52,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.border,
+    padding: 2,
+    justifyContent: 'center',
+  },
+  layerToggleActive: {
+    backgroundColor: colors.primary,
+  },
+  layerToggleThumb: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#ffffff',
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.2)',
+    elevation: 2,
+  },
+  layerToggleThumbActive: {
+    alignSelf: 'flex-end',
+  },
+  layersModalFooter: {
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  layersModalButton: {
+    backgroundColor: colors.primary,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  layersModalButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#ffffff',
   },
 });
