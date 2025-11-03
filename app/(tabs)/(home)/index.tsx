@@ -21,8 +21,35 @@ export default function HomeScreen() {
     router.push('/(tabs)/(home)/create-post');
   };
 
+  const handleMapPress = () => {
+    router.push('/(tabs)/map');
+  };
+
+  const handleMessagesPress = () => {
+    router.push('/(tabs)/messages');
+  };
+
+  const handleNotificationsPress = () => {
+    router.push('/(tabs)/notifications');
+  };
+
   const renderHeader = () => (
     <View style={styles.headerContainer}>
+      {Platform.OS !== 'ios' && (
+        <View style={styles.topBar}>
+          <Pressable style={styles.topButton} onPress={handleMapPress}>
+            <IconSymbol name="map.fill" color={colors.text} size={24} />
+          </Pressable>
+          <View style={styles.topRight}>
+            <Pressable style={styles.topButton} onPress={handleMessagesPress}>
+              <IconSymbol name="message.fill" color={colors.text} size={24} />
+            </Pressable>
+            <Pressable style={styles.topButton} onPress={handleNotificationsPress}>
+              <IconSymbol name="bell.fill" color={colors.text} size={24} />
+            </Pressable>
+          </View>
+        </View>
+      )}
       <View style={styles.titleContainer}>
         <Text style={styles.title}>Avid Outdoorsman</Text>
         <Text style={styles.subtitle}>Real conditions. Right now.</Text>
@@ -35,14 +62,19 @@ export default function HomeScreen() {
   );
 
   const renderHeaderRight = () => (
-    <Pressable style={styles.headerButton} onPress={handleCreatePost}>
-      <IconSymbol name="plus.circle.fill" color={colors.primary} size={28} />
-    </Pressable>
+    <View style={styles.headerButtonGroup}>
+      <Pressable style={styles.headerButton} onPress={handleMessagesPress}>
+        <IconSymbol name="message.fill" color={colors.primary} size={24} />
+      </Pressable>
+      <Pressable style={styles.headerButton} onPress={handleNotificationsPress}>
+        <IconSymbol name="bell.fill" color={colors.primary} size={24} />
+      </Pressable>
+    </View>
   );
 
   const renderHeaderLeft = () => (
-    <Pressable style={styles.headerButton}>
-      <IconSymbol name="line.3.horizontal.decrease.circle" color={colors.primary} size={28} />
+    <Pressable style={styles.headerButton} onPress={handleMapPress}>
+      <IconSymbol name="map.fill" color={colors.primary} size={24} />
     </Pressable>
   );
 
@@ -71,12 +103,7 @@ export default function HomeScreen() {
           showsVerticalScrollIndicator={false}
         />
         
-        {/* Floating Action Button for Create Post */}
-        {Platform.OS !== 'ios' && (
-          <Pressable style={styles.fab} onPress={handleCreatePost}>
-            <IconSymbol name="plus" color="#ffffff" size={28} />
-          </Pressable>
-        )}
+        {/* Floating Action Button for Create Post - Hidden since we have tab bar button now */}
       </View>
     </>
   );
@@ -95,10 +122,24 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     backgroundColor: colors.card,
-    paddingTop: 16,
+    paddingTop: Platform.OS === 'ios' ? 16 : 60,
     marginBottom: 12,
     boxShadow: `0px 2px 4px ${colors.shadow}`,
     elevation: 2,
+  },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  topButton: {
+    padding: 8,
+  },
+  topRight: {
+    flexDirection: 'row',
+    gap: 8,
   },
   titleContainer: {
     paddingHorizontal: 16,
@@ -118,17 +159,9 @@ const styles = StyleSheet.create({
   headerButton: {
     padding: 4,
   },
-  fab: {
-    position: 'absolute',
-    bottom: 90,
-    right: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: `0px 4px 12px ${colors.shadow}`,
-    elevation: 8,
+  headerButtonGroup: {
+    flexDirection: 'row',
+    gap: 12,
+    marginRight: 8,
   },
 });

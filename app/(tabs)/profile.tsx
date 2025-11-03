@@ -1,80 +1,131 @@
 
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Platform, Image, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack } from 'expo-router';
-import { colors } from '@/styles/commonStyles';
+import { Stack, useRouter } from 'expo-router';
+import { View, Text, StyleSheet, ScrollView, Platform, Image, Pressable } from 'react-native';
+import React from 'react';
 import { IconSymbol } from '@/components/IconSymbol';
+import { colors } from '@/styles/commonStyles';
 
 export default function ProfileScreen() {
+  const router = useRouter();
+
+  const handleMapPress = () => {
+    router.push('/(tabs)/map');
+  };
+
+  const handleMessagesPress = () => {
+    router.push('/(tabs)/messages');
+  };
+
+  const handleNotificationsPress = () => {
+    router.push('/(tabs)/notifications');
+  };
+
+  const renderHeaderRight = () => (
+    <View style={styles.headerButtonGroup}>
+      <Pressable style={styles.headerButton} onPress={handleMessagesPress}>
+        <IconSymbol name="message.fill" color={colors.primary} size={24} />
+      </Pressable>
+      <Pressable style={styles.headerButton} onPress={handleNotificationsPress}>
+        <IconSymbol name="bell.fill" color={colors.primary} size={24} />
+      </Pressable>
+    </View>
+  );
+
+  const renderHeaderLeft = () => (
+    <Pressable style={styles.headerButton} onPress={handleMapPress}>
+      <IconSymbol name="map.fill" color={colors.primary} size={24} />
+    </Pressable>
+  );
+
   return (
     <>
       {Platform.OS === 'ios' && (
         <Stack.Screen
           options={{
             title: 'Profile',
+            headerRight: renderHeaderRight,
+            headerLeft: renderHeaderLeft,
             headerLargeTitle: false,
           }}
         />
       )}
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.container}>
         <ScrollView
           contentContainerStyle={[
             styles.content,
             Platform.OS !== 'ios' && styles.contentWithTabBar,
           ]}
         >
+          {Platform.OS !== 'ios' && (
+            <View style={styles.topBar}>
+              <Pressable style={styles.topButton} onPress={handleMapPress}>
+                <IconSymbol name="map.fill" color={colors.text} size={24} />
+              </Pressable>
+              <View style={styles.topRight}>
+                <Pressable style={styles.topButton} onPress={handleMessagesPress}>
+                  <IconSymbol name="message.fill" color={colors.text} size={24} />
+                </Pressable>
+                <Pressable style={styles.topButton} onPress={handleNotificationsPress}>
+                  <IconSymbol name="bell.fill" color={colors.text} size={24} />
+                </Pressable>
+              </View>
+            </View>
+          )}
+
           {/* Profile Header */}
           <View style={styles.profileHeader}>
             <Image
-              source={{ uri: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop' }}
+              source={{ uri: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop' }}
               style={styles.avatar}
             />
             <Text style={styles.name}>John Outdoorsman</Text>
-            <Text style={styles.location}>
-              <IconSymbol name="location.fill" size={14} color={colors.textSecondary} />
-              {' '}Montana
+            <Text style={styles.username}>@john_outdoors</Text>
+            <Text style={styles.bio}>
+              Passionate hunter, angler, and hiker. Sharing my adventures and favorite spots with the community.
             </Text>
-            <View style={styles.statsRow}>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>127</Text>
-                <Text style={styles.statLabel}>Posts</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>342</Text>
-                <Text style={styles.statLabel}>Followers</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>89</Text>
-                <Text style={styles.statLabel}>Following</Text>
-              </View>
-            </View>
+            
             <Pressable style={styles.editButton}>
+              <IconSymbol name="pencil" color={colors.primary} size={16} />
               <Text style={styles.editButtonText}>Edit Profile</Text>
             </Pressable>
           </View>
 
-          {/* Activities */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>My Activities</Text>
-            <View style={styles.activitiesGrid}>
-              <ActivityBadge icon="scope" label="Hunting" color={colors.secondary} />
-              <ActivityBadge icon="figure.fishing" label="Fishing" color={colors.primary} />
-              <ActivityBadge icon="figure.hiking" label="Hiking" color={colors.highlight} />
-              <ActivityBadge icon="tent" label="Camping" color={colors.accent} />
+          {/* Stats */}
+          <View style={styles.statsContainer}>
+            <View style={styles.statCard}>
+              <Text style={styles.statValue}>127</Text>
+              <Text style={styles.statLabel}>Posts</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statValue}>1.2K</Text>
+              <Text style={styles.statLabel}>Followers</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statValue}>543</Text>
+              <Text style={styles.statLabel}>Following</Text>
             </View>
           </View>
 
-          {/* Stats */}
+          {/* Activity Badges */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>This Season</Text>
+            <Text style={styles.sectionTitle}>Activities</Text>
+            <View style={styles.badgesContainer}>
+              <ActivityBadge icon="fish.fill" label="Fishing" color={colors.primary} />
+              <ActivityBadge icon="scope" label="Hunting" color={colors.secondary} />
+              <ActivityBadge icon="figure.hiking" label="Hiking" color={colors.highlight} />
+              <ActivityBadge icon="tent.fill" label="Camping" color={colors.accent} />
+            </View>
+          </View>
+
+          {/* Stats Details */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Statistics</Text>
             <View style={styles.card}>
-              <StatRow icon="figure.fishing" label="Fish Caught" value="47" />
-              <StatRow icon="figure.hiking" label="Miles Hiked" value="156" />
-              <StatRow icon="mountain.2" label="Peaks Summited" value="8" />
-              <StatRow icon="tent" label="Nights Camped" value="23" />
+              <StatRow icon="mappin.circle.fill" label="Landmarks Created" value="23" />
+              <StatRow icon="location.fill" label="Miles Traveled" value="1,247" />
+              <StatRow icon="calendar" label="Days Outdoors" value="89" />
+              <StatRow icon="star.fill" label="Reviews Written" value="45" />
             </View>
           </View>
 
@@ -84,21 +135,27 @@ export default function ProfileScreen() {
             <View style={styles.card}>
               <SettingRow icon="bell.fill" label="Notifications" />
               <SettingRow icon="lock.fill" label="Privacy" />
-              <SettingRow icon="location.fill" label="Location Settings" />
+              <SettingRow icon="location.fill" label="Location Services" />
               <SettingRow icon="questionmark.circle.fill" label="Help & Support" />
+              <SettingRow icon="info.circle.fill" label="About" />
             </View>
           </View>
+
+          <Pressable style={styles.logoutButton}>
+            <IconSymbol name="arrow.right.square.fill" color={colors.secondary} size={20} />
+            <Text style={styles.logoutButtonText}>Log Out</Text>
+          </Pressable>
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </>
   );
 }
 
 function ActivityBadge({ icon, label, color }: { icon: string; label: string; color: string }) {
   return (
-    <View style={[styles.activityBadge, { backgroundColor: color }]}>
-      <IconSymbol name={icon as any} size={28} color="#ffffff" />
-      <Text style={styles.activityLabel}>{label}</Text>
+    <View style={[styles.activityBadge, { borderColor: color }]}>
+      <IconSymbol name={icon as any} size={24} color={color} />
+      <Text style={[styles.activityLabel, { color }]}>{label}</Text>
     </View>
   );
 }
@@ -122,7 +179,7 @@ function SettingRow({ icon, label }: { icon: string; label: string }) {
         <IconSymbol name={icon as any} size={20} color={colors.textSecondary} />
         <Text style={styles.settingRowLabel}>{label}</Text>
       </View>
-      <IconSymbol name="chevron.right" size={16} color={colors.textSecondary} />
+      <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
     </Pressable>
   );
 }
@@ -133,27 +190,37 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   content: {
-    padding: 16,
+    paddingBottom: 16,
   },
   contentWithTabBar: {
+    paddingTop: 60,
     paddingBottom: 100,
+  },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  topButton: {
+    padding: 8,
+  },
+  topRight: {
+    flexDirection: 'row',
+    gap: 8,
   },
   profileHeader: {
     backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 24,
     alignItems: 'center',
+    padding: 24,
     marginBottom: 16,
-    boxShadow: `0px 2px 8px ${colors.shadow}`,
-    elevation: 3,
   },
   avatar: {
     width: 100,
     height: 100,
     borderRadius: 50,
     marginBottom: 16,
-    borderWidth: 3,
-    borderColor: colors.primary,
   },
   name: {
     fontSize: 24,
@@ -161,73 +228,84 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: 4,
   },
-  location: {
-    fontSize: 14,
+  username: {
+    fontSize: 16,
     color: colors.textSecondary,
-    marginBottom: 20,
+    marginBottom: 12,
   },
-  statsRow: {
+  bio: {
+    fontSize: 14,
+    color: colors.text,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  editButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
-    gap: 20,
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.primary,
   },
-  statItem: {
+  editButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    gap: 12,
+    marginBottom: 16,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
     alignItems: 'center',
+    boxShadow: `0px 2px 8px ${colors.shadow}`,
+    elevation: 3,
   },
   statValue: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: '700',
     color: colors.text,
+    marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
     color: colors.textSecondary,
-    marginTop: 4,
-  },
-  statDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: colors.border,
-  },
-  editButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 32,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-  editButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '600',
   },
   section: {
+    paddingHorizontal: 16,
     marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
     color: colors.text,
     marginBottom: 12,
-    paddingHorizontal: 4,
   },
-  activitiesGrid: {
+  badgesContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
   },
   activityBadge: {
-    flex: 1,
-    minWidth: '45%',
-    aspectRatio: 1,
-    borderRadius: 12,
-    padding: 16,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 2,
+    backgroundColor: colors.card,
   },
   activityLabel: {
-    color: '#ffffff',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -240,8 +318,8 @@ const styles = StyleSheet.create({
   },
   statRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
@@ -252,19 +330,19 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   statRowLabel: {
-    fontSize: 15,
+    fontSize: 16,
     color: colors.text,
   },
   statRowValue: {
     fontSize: 16,
     fontWeight: '700',
-    color: colors.primary,
+    color: colors.text,
   },
   settingRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
+    alignItems: 'center',
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
@@ -274,7 +352,33 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   settingRowLabel: {
-    fontSize: 15,
+    fontSize: 16,
     color: colors.text,
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginHorizontal: 16,
+    paddingVertical: 16,
+    borderRadius: 12,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.secondary,
+    marginBottom: 16,
+  },
+  logoutButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.secondary,
+  },
+  headerButton: {
+    padding: 4,
+  },
+  headerButtonGroup: {
+    flexDirection: 'row',
+    gap: 12,
+    marginRight: 8,
   },
 });

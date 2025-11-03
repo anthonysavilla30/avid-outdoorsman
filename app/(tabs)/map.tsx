@@ -1,27 +1,21 @@
 
-import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Platform, Pressable, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack } from 'expo-router';
-import { colors, commonStyles } from '@/styles/commonStyles';
-import { IconSymbol } from '@/components/IconSymbol';
-import LandmarkModal from '@/components/LandmarkModal';
 import { mockLandmarks } from '@/data/mockLandmarks';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { colors, commonStyles } from '@/styles/commonStyles';
+import { Stack, useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import LandmarkModal from '@/components/LandmarkModal';
+import { IconSymbol } from '@/components/IconSymbol';
 import { Landmark } from '@/types/Landmark';
 
 export default function MapScreen() {
+  const router = useRouter();
   const [landmarks, setLandmarks] = useState<Landmark[]>(mockLandmarks);
-  const [showLandmarkModal, setShowLandmarkModal] = useState(false);
-  const [selectedCoordinates, setSelectedCoordinates] = useState({ lat: 0, lng: 0 });
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   const handleAddLandmark = () => {
-    // Simulate selecting a location on the map
-    // In a real app, this would come from a long-press on the map
-    const randomLat = 40.7 + Math.random() * 0.1;
-    const randomLng = -74.0 + Math.random() * 0.1;
-    
-    setSelectedCoordinates({ lat: randomLat, lng: randomLng });
-    setShowLandmarkModal(true);
+    setIsModalVisible(true);
   };
 
   const handleSaveLandmark = (landmarkData: {
@@ -32,38 +26,32 @@ export default function MapScreen() {
   }) => {
     const newLandmark: Landmark = {
       id: Date.now().toString(),
-      title: landmarkData.title,
-      description: landmarkData.description,
-      latitude: selectedCoordinates.lat,
-      longitude: selectedCoordinates.lng,
-      visibility: landmarkData.visibility,
-      createdBy: {
-        id: 'current-user',
-        name: 'You',
+      ...landmarkData,
+      coordinates: {
+        latitude: 39.7392 + (Math.random() - 0.5) * 0.1,
+        longitude: -104.9903 + (Math.random() - 0.5) * 0.1,
       },
+      createdBy: 'Current User',
       createdAt: new Date(),
-      category: landmarkData.category as any,
     };
 
     setLandmarks([...landmarks, newLandmark]);
-    setShowLandmarkModal(false);
-    
+    setIsModalVisible(false);
     Alert.alert('Success', 'Landmark added successfully!');
-    console.log('New landmark created:', newLandmark);
   };
 
-  const getLandmarkIcon = (category?: string) => {
+  const getLandmarkIcon = (category: string) => {
     switch (category) {
-      case 'trail':
-        return 'figure.hiking';
-      case 'fishing-spot':
-        return 'figure.fishing';
+      case 'fishing':
+        return 'fish.fill';
+      case 'hunting':
+        return 'scope';
       case 'camping':
         return 'tent.fill';
-      case 'hunting-area':
-        return 'scope';
-      case 'viewpoint':
-        return 'eye.fill';
+      case 'hiking':
+        return 'figure.hiking';
+      case 'other':
+        return 'mappin.circle.fill';
       default:
         return 'mappin.circle.fill';
     }
@@ -71,16 +59,45 @@ export default function MapScreen() {
 
   const getVisibilityIcon = (visibility: string) => {
     switch (visibility) {
-      case 'only-me':
-        return 'lock.fill';
-      case 'followers':
-        return 'person.2.fill';
       case 'public':
         return 'globe';
+      case 'followers':
+        return 'person.2.fill';
+      case 'private':
+        return 'lock.fill';
       default:
-        return 'mappin.circle.fill';
+        return 'lock.fill';
     }
   };
+
+  const handleMapPress = () => {
+    router.push('/(tabs)/map');
+  };
+
+  const handleMessagesPress = () => {
+    router.push('/(tabs)/messages');
+  };
+
+  const handleNotificationsPress = () => {
+    router.push('/(tabs)/notifications');
+  };
+
+  const renderHeaderRight = () => (
+    <View style={styles.headerButtonGroup}>
+      <Pressable style={styles.headerButton} onPress={handleMessagesPress}>
+        <IconSymbol name="message.fill" color={colors.primary} size={24} />
+      </Pressable>
+      <Pressable style={styles.headerButton} onPress={handleNotificationsPress}>
+        <IconSymbol name="bell.fill" color={colors.primary} size={24} />
+      </Pressable>
+    </View>
+  );
+
+  const renderHeaderLeft = () => (
+    <Pressable style={styles.headerButton} onPress={handleMapPress}>
+      <IconSymbol name="map.fill" color={colors.primary} size={24} />
+    </Pressable>
+  );
 
   return (
     <>
@@ -88,175 +105,105 @@ export default function MapScreen() {
         <Stack.Screen
           options={{
             title: 'Map',
+            headerRight: renderHeaderRight,
+            headerLeft: renderHeaderLeft,
             headerLargeTitle: false,
-            headerRight: () => (
-              <Pressable onPress={handleAddLandmark} style={styles.headerButton}>
-                <IconSymbol name="plus.circle.fill" color={colors.primary} size={28} />
-              </Pressable>
-            ),
           }}
         />
       )}
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.container}>
         <ScrollView
           contentContainerStyle={[
             styles.content,
             Platform.OS !== 'ios' && styles.contentWithTabBar,
           ]}
         >
-          <View style={styles.iconContainer}>
-            <IconSymbol name="map" size={80} color={colors.primary} />
-          </View>
-          
-          <Text style={styles.title}>Interactive Maps</Text>
-          <Text style={styles.subtitle}>Coming Soon</Text>
-          
-          <View style={styles.infoCard}>
-            <Text style={styles.infoText}>
-              <Text style={styles.bold}>Note:</Text> react-native-maps is not currently supported in the Natively environment.
-            </Text>
-            <Text style={[styles.infoText, styles.marginTop]}>
-              The full version of Avid Outdoorsman will include:
-            </Text>
-          </View>
-
-          <View style={styles.featureList}>
-            <FeatureItem 
-              icon="map.fill" 
-              text="High-resolution satellite imagery"
-            />
-            <FeatureItem 
-              icon="mountain.2" 
-              text="Topographic contour lines for elevation"
-            />
-            <FeatureItem 
-              icon="square.dashed" 
-              text="BLM and National Forest boundaries"
-            />
-            <FeatureItem 
-              icon="house.fill" 
-              text="Private property lines (stay legal, stay safe)"
-            />
-            <FeatureItem 
-              icon="figure.hiking" 
-              text="Trail overlays from OpenStreetMap"
-            />
-            <FeatureItem 
-              icon="mappin.circle.fill" 
-              text="Custom markers with privacy controls"
-            />
-            <FeatureItem 
-              icon="magnifyingglass" 
-              text="Location search to scout new areas"
-            />
-          </View>
-
-          {/* Landmark Features Section */}
-          <View style={styles.landmarkSection}>
-            <View style={styles.sectionHeader}>
-              <IconSymbol name="mappin.and.ellipse" size={28} color={colors.accent} />
-              <Text style={styles.sectionTitle}>Landmark Features</Text>
-            </View>
-            
-            <Text style={styles.sectionDescription}>
-              Mark your favorite spots and share them with followers:
-            </Text>
-
-            <View style={styles.landmarkFeatures}>
-              <View style={styles.landmarkFeature}>
-                <IconSymbol name="hand.tap.fill" size={24} color={colors.primary} />
-                <Text style={styles.landmarkFeatureText}>
-                  Long-press on map to drop a pin
-                </Text>
+          {Platform.OS !== 'ios' && (
+            <View style={styles.topBar}>
+              <Pressable style={styles.topButton} onPress={handleMapPress}>
+                <IconSymbol name="map.fill" color={colors.text} size={24} />
+              </Pressable>
+              <View style={styles.topRight}>
+                <Pressable style={styles.topButton} onPress={handleMessagesPress}>
+                  <IconSymbol name="message.fill" color={colors.text} size={24} />
+                </Pressable>
+                <Pressable style={styles.topButton} onPress={handleNotificationsPress}>
+                  <IconSymbol name="bell.fill" color={colors.text} size={24} />
+                </Pressable>
               </View>
-              <View style={styles.landmarkFeature}>
-                <IconSymbol name="lock.fill" size={24} color={colors.primary} />
-                <Text style={styles.landmarkFeatureText}>
-                  Control who can see your landmarks
-                </Text>
-              </View>
-              <View style={styles.landmarkFeature}>
-                <IconSymbol name="tag.fill" size={24} color={colors.primary} />
-                <Text style={styles.landmarkFeatureText}>
-                  Categorize by activity type
-                </Text>
-              </View>
-              <View style={styles.landmarkFeature}>
-                <IconSymbol name="photo.fill" size={24} color={colors.primary} />
-                <Text style={styles.landmarkFeatureText}>
-                  Add photos and descriptions
-                </Text>
-              </View>
-            </View>
-
-            <Pressable style={styles.demoButton} onPress={handleAddLandmark}>
-              <IconSymbol name="plus.circle.fill" size={24} color="#ffffff" />
-              <Text style={styles.demoButtonText}>Try Adding a Landmark</Text>
-            </Pressable>
-          </View>
-
-          {/* Your Landmarks */}
-          {landmarks.length > 0 && (
-            <View style={styles.landmarksListSection}>
-              <Text style={styles.sectionTitle}>Your Landmarks ({landmarks.length})</Text>
-              {landmarks.map((landmark) => (
-                <View key={landmark.id} style={styles.landmarkCard}>
-                  <View style={styles.landmarkHeader}>
-                    <View style={styles.landmarkTitleRow}>
-                      <IconSymbol
-                        name={getLandmarkIcon(landmark.category) as any}
-                        size={24}
-                        color={colors.primary}
-                      />
-                      <Text style={styles.landmarkTitle}>{landmark.title}</Text>
-                    </View>
-                    <View style={styles.visibilityBadge}>
-                      <IconSymbol
-                        name={getVisibilityIcon(landmark.visibility) as any}
-                        size={14}
-                        color={colors.textSecondary}
-                      />
-                    </View>
-                  </View>
-                  {landmark.description && (
-                    <Text style={styles.landmarkDescription}>{landmark.description}</Text>
-                  )}
-                  <View style={styles.landmarkFooter}>
-                    <Text style={styles.landmarkCoords}>
-                      {landmark.latitude.toFixed(4)}, {landmark.longitude.toFixed(4)}
-                    </Text>
-                    <Text style={styles.landmarkDate}>
-                      {landmark.createdAt.toLocaleDateString()}
-                    </Text>
-                  </View>
-                </View>
-              ))}
             </View>
           )}
 
-          <View style={styles.comingSoonBadge}>
-            <IconSymbol name="clock" size={20} color={colors.accent} />
-            <Text style={styles.comingSoonText}>
-              Maps will be available in a future update
+          <View style={styles.header}>
+            <Text style={styles.title}>Interactive Maps</Text>
+            <Text style={styles.subtitle}>
+              Note: react-native-maps is not currently supported in Natively. 
+              This is a placeholder showing map features.
             </Text>
+          </View>
+
+          <View style={styles.mapPlaceholder}>
+            <IconSymbol name="map.fill" size={64} color={colors.textSecondary} />
+            <Text style={styles.placeholderText}>Map View</Text>
+            <Text style={styles.placeholderSubtext}>
+              Interactive map with satellite imagery, topographic lines, and property boundaries
+            </Text>
+          </View>
+
+          <Pressable style={styles.addButton} onPress={handleAddLandmark}>
+            <IconSymbol name="plus.circle.fill" size={24} color="#ffffff" />
+            <Text style={styles.addButtonText}>Add Landmark</Text>
+          </Pressable>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Map Features</Text>
+            <FeatureItem icon="map.fill" text="High-resolution satellite imagery" />
+            <FeatureItem icon="mountain.2.fill" text="Topographic contour lines" />
+            <FeatureItem icon="square.dashed" text="BLM and National Forest boundaries" />
+            <FeatureItem icon="house.fill" text="Private property lines" />
+            <FeatureItem icon="figure.walk" text="Trail overlays from OpenStreetMap" />
+            <FeatureItem icon="mappin.circle.fill" text="Custom markers with privacy controls" />
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Your Landmarks ({landmarks.length})</Text>
+            {landmarks.map((landmark) => (
+              <View key={landmark.id} style={styles.landmarkCard}>
+                <View style={styles.landmarkHeader}>
+                  <IconSymbol
+                    name={getLandmarkIcon(landmark.category) as any}
+                    size={24}
+                    color={colors.primary}
+                  />
+                  <View style={styles.landmarkInfo}>
+                    <Text style={styles.landmarkTitle}>{landmark.title}</Text>
+                    <Text style={styles.landmarkDescription}>{landmark.description}</Text>
+                  </View>
+                  <IconSymbol
+                    name={getVisibilityIcon(landmark.visibility) as any}
+                    size={20}
+                    color={colors.textSecondary}
+                  />
+                </View>
+                <View style={styles.landmarkFooter}>
+                  <Text style={styles.landmarkCategory}>{landmark.category}</Text>
+                  <Text style={styles.landmarkCoords}>
+                    {landmark.coordinates.latitude.toFixed(4)}, {landmark.coordinates.longitude.toFixed(4)}
+                  </Text>
+                </View>
+              </View>
+            ))}
           </View>
         </ScrollView>
 
-        {/* Floating Action Button for Add Landmark */}
-        {Platform.OS !== 'ios' && (
-          <Pressable style={styles.fab} onPress={handleAddLandmark}>
-            <IconSymbol name="mappin.and.ellipse" color="#ffffff" size={28} />
-          </Pressable>
-        )}
-      </SafeAreaView>
-
-      <LandmarkModal
-        visible={showLandmarkModal}
-        onClose={() => setShowLandmarkModal(false)}
-        onSave={handleSaveLandmark}
-        latitude={selectedCoordinates.lat}
-        longitude={selectedCoordinates.lng}
-      />
+        <LandmarkModal
+          visible={isModalVisible}
+          onClose={() => setIsModalVisible(false)}
+          onSave={handleSaveLandmark}
+          latitude={39.7392}
+          longitude={-104.9903}
+        />
+      </View>
     </>
   );
 }
@@ -264,7 +211,7 @@ export default function MapScreen() {
 function FeatureItem({ icon, text }: { icon: string; text: string }) {
   return (
     <View style={styles.featureItem}>
-      <IconSymbol name={icon as any} size={24} color={colors.primary} />
+      <IconSymbol name={icon as any} size={20} color={colors.primary} />
       <Text style={styles.featureText}>{text}</Text>
     </View>
   );
@@ -276,209 +223,152 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   content: {
-    padding: 20,
-    alignItems: 'center',
+    padding: 16,
+    paddingBottom: 16,
   },
   contentWithTabBar: {
+    paddingTop: 60,
     paddingBottom: 100,
   },
-  iconContainer: {
-    marginTop: 40,
-    marginBottom: 24,
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  topButton: {
+    padding: 8,
+  },
+  topRight: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  header: {
+    marginBottom: 16,
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '700',
     color: colors.text,
     marginBottom: 8,
-    textAlign: 'center',
   },
   subtitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.primary,
-    marginBottom: 32,
-    textAlign: 'center',
-  },
-  infoCard: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 24,
-    width: '100%',
-    boxShadow: `0px 2px 8px ${colors.shadow}`,
-    elevation: 3,
-  },
-  infoText: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: colors.text,
-  },
-  bold: {
-    fontWeight: '700',
-  },
-  marginTop: {
-    marginTop: 12,
-  },
-  featureList: {
-    width: '100%',
-    gap: 16,
-    marginBottom: 32,
-  },
-  featureItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    padding: 16,
-    borderRadius: 10,
-    gap: 12,
-    boxShadow: `0px 1px 4px ${colors.shadow}`,
-    elevation: 2,
-  },
-  featureText: {
-    flex: 1,
-    fontSize: 15,
-    color: colors.text,
+    fontSize: 14,
+    color: colors.textSecondary,
     lineHeight: 20,
   },
-  landmarkSection: {
-    width: '100%',
+  mapPlaceholder: {
     backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
+    borderRadius: 12,
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    minHeight: 250,
     boxShadow: `0px 2px 8px ${colors.shadow}`,
     elevation: 3,
   },
-  sectionHeader: {
+  placeholderText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text,
+    marginTop: 16,
+  },
+  placeholderSubtext: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  addButton: {
+    backgroundColor: colors.primary,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 12,
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 24,
+    gap: 8,
+    boxShadow: `0px 2px 8px ${colors.shadow}`,
+    elevation: 3,
+  },
+  addButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  section: {
+    marginBottom: 24,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '700',
     color: colors.text,
+    marginBottom: 12,
   },
-  sectionDescription: {
-    fontSize: 15,
-    color: colors.textSecondary,
-    marginBottom: 20,
-    lineHeight: 22,
-  },
-  landmarkFeatures: {
-    gap: 16,
-    marginBottom: 20,
-  },
-  landmarkFeature: {
+  featureItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 12,
     gap: 12,
   },
-  landmarkFeatureText: {
-    flex: 1,
-    fontSize: 15,
-    color: colors.text,
-  },
-  demoButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    gap: 8,
-  },
-  demoButtonText: {
+  featureText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#ffffff',
-  },
-  landmarksListSection: {
-    width: '100%',
-    marginBottom: 24,
+    color: colors.text,
+    flex: 1,
   },
   landmarkCard: {
     backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
-    marginTop: 12,
-    boxShadow: `0px 2px 6px ${colors.shadow}`,
-    elevation: 2,
+    marginBottom: 12,
+    boxShadow: `0px 2px 8px ${colors.shadow}`,
+    elevation: 3,
   },
   landmarkHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
+    alignItems: 'flex-start',
+    marginBottom: 12,
+    gap: 12,
   },
-  landmarkTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  landmarkInfo: {
     flex: 1,
   },
   landmarkTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.text,
-    flex: 1,
-  },
-  visibilityBadge: {
-    backgroundColor: colors.background,
-    padding: 6,
-    borderRadius: 8,
+    marginBottom: 4,
   },
   landmarkDescription: {
     fontSize: 14,
     color: colors.textSecondary,
-    marginBottom: 12,
     lineHeight: 20,
   },
   landmarkFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  landmarkCategory: {
+    fontSize: 12,
+    color: colors.primary,
+    fontWeight: '600',
+    textTransform: 'capitalize',
   },
   landmarkCoords: {
     fontSize: 12,
     color: colors.textSecondary,
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-  },
-  landmarkDate: {
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  comingSoonBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.accent,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 24,
-    gap: 8,
-  },
-  comingSoonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#ffffff',
   },
   headerButton: {
     padding: 4,
   },
-  fab: {
-    position: 'absolute',
-    bottom: 90,
-    right: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: `0px 4px 12px ${colors.shadow}`,
-    elevation: 8,
+  headerButtonGroup: {
+    flexDirection: 'row',
+    gap: 12,
+    marginRight: 8,
   },
 });

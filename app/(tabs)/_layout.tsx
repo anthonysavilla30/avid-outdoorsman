@@ -16,10 +16,22 @@ export default function TabLayout() {
       label: 'Feed',
     },
     {
-      name: 'map',
-      route: '/(tabs)/map',
-      icon: 'map.fill',
-      label: 'Map',
+      name: 'explore',
+      route: '/(tabs)/explore',
+      icon: 'person.2.fill',
+      label: 'Explore',
+    },
+    {
+      name: 'post',
+      route: '/(tabs)/(home)/create-post',
+      icon: 'plus.circle.fill',
+      label: 'Post',
+    },
+    {
+      name: 'weather',
+      route: '/(tabs)/weather',
+      icon: 'cloud.sun.fill',
+      label: 'Weather',
     },
     {
       name: 'profile',
@@ -37,9 +49,17 @@ export default function TabLayout() {
           <Icon sf="house.fill" drawable="ic_home" />
           <Label>Feed</Label>
         </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="map">
-          <Icon sf="map.fill" drawable="ic_map" />
-          <Label>Map</Label>
+        <NativeTabs.Trigger name="explore">
+          <Icon sf="person.2.fill" drawable="ic_explore" />
+          <Label>Explore</Label>
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="(home)/create-post">
+          <Icon sf="plus.circle.fill" drawable="ic_add" />
+          <Label>Post</Label>
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="weather">
+          <Icon sf="cloud.sun.fill" drawable="ic_weather" />
+          <Label>Weather</Label>
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="profile">
           <Icon sf="person.fill" drawable="ic_profile" />
@@ -59,8 +79,12 @@ export default function TabLayout() {
         }}
       >
         <Stack.Screen name="(home)" />
-        <Stack.Screen name="map" />
+        <Stack.Screen name="explore" />
+        <Stack.Screen name="weather" />
         <Stack.Screen name="profile" />
+        <Stack.Screen name="map" />
+        <Stack.Screen name="messages" />
+        <Stack.Screen name="notifications" />
       </Stack>
       <FloatingTabBar tabs={tabs} />
     </>

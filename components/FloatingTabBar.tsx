@@ -35,7 +35,7 @@ interface FloatingTabBarProps {
 
 export default function FloatingTabBar({
   tabs,
-  containerWidth = 320,
+  containerWidth = 360,
   borderRadius = 24,
   bottomMargin = 20,
 }: FloatingTabBarProps) {
@@ -43,20 +43,28 @@ export default function FloatingTabBar({
   const pathname = usePathname();
   const animatedValue = useSharedValue(0);
 
-  const handleTabPress = (route: string) => {
+  const handleTabPress = (route: string, index: number) => {
     console.log('Navigating to:', route);
-    router.push(route as any);
+    // Center button (Post) - index 2
+    if (index === 2) {
+      router.push('/(tabs)/(home)/create-post' as any);
+    } else {
+      router.push(route as any);
+    }
   };
 
   const activeIndex = tabs.findIndex((tab) => {
     if (pathname === '/' || pathname === '/(tabs)/(home)/' || pathname === '/(tabs)/(home)') {
       return tab.name === '(home)';
     }
+    if (pathname.includes('create-post')) {
+      return tab.name === 'post';
+    }
     return pathname.includes(tab.name);
   });
 
   React.useEffect(() => {
-    animatedValue.value = withSpring(activeIndex, {
+    animatedValue.value = withSpring(activeIndex >= 0 ? activeIndex : 0, {
       damping: 15,
       stiffness: 150,
     });
@@ -95,11 +103,32 @@ export default function FloatingTabBar({
           <Animated.View style={[styles.indicator, indicatorStyle]} />
           {tabs.map((tab, index) => {
             const isActive = index === activeIndex;
+            const isCenterButton = index === 2; // Post button
+
+            if (isCenterButton) {
+              return (
+                <TouchableOpacity
+                  key={tab.name}
+                  style={styles.centerButtonContainer}
+                  onPress={() => handleTabPress(tab.route, index)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.centerButton}>
+                    <IconSymbol
+                      name={tab.icon as any}
+                      size={32}
+                      color="#ffffff"
+                    />
+                  </View>
+                </TouchableOpacity>
+              );
+            }
+
             return (
               <TouchableOpacity
                 key={tab.name}
                 style={styles.tab}
-                onPress={() => handleTabPress(tab.route)}
+                onPress={() => handleTabPress(tab.route, index)}
                 activeOpacity={0.7}
               >
                 <IconSymbol
@@ -145,7 +174,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     boxShadow: `0px 4px 12px ${colors.shadow}`,
     elevation: 8,
-    overflow: 'hidden',
+    overflow: 'visible',
   },
   tab: {
     flex: 1,
@@ -166,5 +195,22 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     top: '10%',
     zIndex: 1,
+  },
+  centerButtonContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 3,
+  },
+  centerButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: -28,
+    boxShadow: `0px 4px 12px ${colors.shadow}`,
+    elevation: 8,
   },
 });
