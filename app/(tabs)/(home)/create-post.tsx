@@ -39,6 +39,15 @@ export default function CreatePostScreen() {
     { type: 'mountain-biking', icon: 'bicycle', label: 'Mountain Biking' },
     { type: 'overlanding', icon: 'car.fill', label: 'Overlanding' },
     { type: 'backpacking', icon: 'backpack.fill', label: 'Backpacking' },
+    { type: 'rock-climbing', icon: 'figure.climbing', label: 'Rock Climbing' },
+    { type: 'trail-running', icon: 'figure.run', label: 'Trail Running' },
+    { type: 'wildlife-photography', icon: 'camera.fill', label: 'Wildlife Photography' },
+    { type: 'foraging', icon: 'leaf.fill', label: 'Foraging' },
+    { type: 'off-roading', icon: 'car.2.fill', label: 'Off-Roading' },
+    { type: 'canoeing', icon: 'water.waves', label: 'Canoeing' },
+    { type: 'paddleboarding', icon: 'figure.surfing', label: 'Stand-Up Paddleboarding' },
+    { type: 'snowshoeing', icon: 'snowflake', label: 'Snowshoeing' },
+    { type: 'cross-country-skiing', icon: 'figure.skiing.crosscountry', label: 'Cross-Country Skiing' },
   ];
 
   const selectedActivityData = activities.find(a => a.type === selectedActivity) || activities[0];

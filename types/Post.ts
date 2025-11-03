@@ -1,5 +1,23 @@
 
-export type ActivityType = 'hunting' | 'fishing' | 'hiking' | 'camping' | 'kayaking' | 'mountain-biking' | 'overlanding' | 'backpacking' | 'all';
+export type ActivityType = 
+  | 'hunting' 
+  | 'fishing' 
+  | 'hiking' 
+  | 'camping' 
+  | 'kayaking' 
+  | 'mountain-biking' 
+  | 'overlanding' 
+  | 'backpacking'
+  | 'rock-climbing'
+  | 'trail-running'
+  | 'wildlife-photography'
+  | 'foraging'
+  | 'off-roading'
+  | 'canoeing'
+  | 'paddleboarding'
+  | 'snowshoeing'
+  | 'cross-country-skiing'
+  | 'all';
 
 export interface Post {
   id: string;
