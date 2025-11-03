@@ -1,13 +1,35 @@
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
-import { View, Text, StyleSheet, ScrollView, Platform, Image, Pressable } from 'react-native';
-import React from 'react';
+import { View, Text, StyleSheet, ScrollView, Platform, Image, Pressable, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const [isTracking, setIsTracking] = useState(false);
+  const [currentMiles, setCurrentMiles] = useState(0);
+  const [totalMiles, setTotalMiles] = useState(1247);
+  const [trackingStartTime, setTrackingStartTime] = useState<Date | null>(null);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (isTracking) {
+      // Simulate mile tracking (in a real app, this would use GPS/Location services)
+      interval = setInterval(() => {
+        setCurrentMiles(prev => {
+          const newMiles = prev + 0.01; // Simulate 0.01 miles per second
+          return parseFloat(newMiles.toFixed(2));
+        });
+      }, 1000);
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isTracking]);
 
   const handleMapPress = () => {
     router.push('/(tabs)/map');
@@ -23,6 +45,42 @@ export default function ProfileScreen() {
 
   const handleNotificationsPress = () => {
     router.push('/(tabs)/notifications');
+  };
+
+  const handleStartTracking = () => {
+    if (isTracking) {
+      // Stop tracking
+      Alert.alert(
+        'Stop Tracking',
+        `You tracked ${currentMiles.toFixed(2)} miles this session. Save to your profile?`,
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+          {
+            text: 'Save',
+            onPress: () => {
+              setTotalMiles(prev => prev + currentMiles);
+              setIsTracking(false);
+              setCurrentMiles(0);
+              setTrackingStartTime(null);
+              Alert.alert('Success', `${currentMiles.toFixed(2)} miles added to your total!`);
+            },
+          },
+        ]
+      );
+    } else {
+      // Start tracking
+      setIsTracking(true);
+      setCurrentMiles(0);
+      setTrackingStartTime(new Date());
+      Alert.alert('Tracking Started', 'Your miles are now being tracked. Stay safe out there!');
+    }
+  };
+
+  const handleViewLeaderboard = () => {
+    router.push('/(tabs)/leaderboard');
   };
 
   const renderHeaderRight = () => (
@@ -138,7 +196,7 @@ export default function ProfileScreen() {
             <Text style={styles.sectionTitle}>Statistics</Text>
             <View style={styles.card}>
               <StatRow icon="mappin.circle.fill" label="Landmarks Created" value="23" />
-              <StatRow icon="location.fill" label="Miles Traveled" value="1,247" />
+              <StatRow icon="location.fill" label="Miles Traveled" value={totalMiles.toLocaleString()} />
               <StatRow icon="calendar" label="Days Outdoors" value="89" />
               <StatRow icon="star.fill" label="Reviews Written" value="45" />
             </View>
@@ -149,21 +207,81 @@ export default function ProfileScreen() {
             <Text style={styles.sectionTitle}>Mile Tracking</Text>
             <View style={styles.card}>
               <View style={styles.mileTrackingHeader}>
-                <IconSymbol name="figure.run" size={32} color={colors.primary} />
+                <IconSymbol 
+                  name={isTracking ? "figure.run.circle.fill" : "figure.run"} 
+                  size={32} 
+                  color={isTracking ? colors.accent : colors.primary} 
+                />
                 <View style={styles.mileTrackingInfo}>
-                  <Text style={styles.mileTrackingTitle}>Track Your Miles</Text>
+                  <Text style={styles.mileTrackingTitle}>
+                    {isTracking ? 'Tracking Active' : 'Track Your Miles'}
+                  </Text>
                   <Text style={styles.mileTrackingSubtitle}>
-                    Start tracking your outdoor adventures and compete on the leaderboard!
+                    {isTracking 
+                      ? `Current session: ${currentMiles.toFixed(2)} miles`
+                      : 'Start tracking your outdoor adventures and compete on the leaderboard!'
+                    }
                   </Text>
                 </View>
               </View>
-              <Pressable style={styles.startTrackingButton}>
-                <IconSymbol name="play.fill" color="#ffffff" size={20} />
-                <Text style={styles.startTrackingText}>Start Tracking</Text>
+              
+              {isTracking && (
+                <View style={styles.trackingStats}>
+                  <View style={styles.trackingStat}>
+                    <IconSymbol name="clock.fill" size={20} color={colors.textSecondary} />
+                    <Text style={styles.trackingStatLabel}>Duration</Text>
+                    <Text style={styles.trackingStatValue}>
+                      {trackingStartTime 
+                        ? Math.floor((new Date().getTime() - trackingStartTime.getTime()) / 60000) + ' min'
+                        : '0 min'
+                      }
+                    </Text>
+                  </View>
+                  <View style={styles.trackingStat}>
+                    <IconSymbol name="speedometer" size={20} color={colors.textSecondary} />
+                    <Text style={styles.trackingStatLabel}>Pace</Text>
+                    <Text style={styles.trackingStatValue}>
+                      {currentMiles > 0 && trackingStartTime
+                        ? ((new Date().getTime() - trackingStartTime.getTime()) / 60000 / currentMiles).toFixed(1) + ' min/mi'
+                        : '-- min/mi'
+                      }
+                    </Text>
+                  </View>
+                </View>
+              )}
+              
+              <Pressable 
+                style={[
+                  styles.startTrackingButton,
+                  isTracking && styles.stopTrackingButton
+                ]}
+                onPress={handleStartTracking}
+              >
+                <IconSymbol 
+                  name={isTracking ? "stop.fill" : "play.fill"} 
+                  color="#ffffff" 
+                  size={20} 
+                />
+                <Text style={styles.startTrackingText}>
+                  {isTracking ? 'Stop Tracking' : 'Start Tracking'}
+                </Text>
               </Pressable>
+              
               <View style={styles.leaderboardPreview}>
-                <Text style={styles.leaderboardTitle}>Leaderboard Preview</Text>
-                <Text style={styles.leaderboardSubtitle}>Coming soon: Compete with others and win prizes!</Text>
+                <View style={styles.leaderboardHeader}>
+                  <IconSymbol name="trophy.fill" size={24} color={colors.accent} />
+                  <Text style={styles.leaderboardTitle}>Leaderboard</Text>
+                </View>
+                <Text style={styles.leaderboardSubtitle}>
+                  Compete with others and win prizes!
+                </Text>
+                <Pressable 
+                  style={styles.viewLeaderboardButton}
+                  onPress={handleViewLeaderboard}
+                >
+                  <Text style={styles.viewLeaderboardText}>View Leaderboard</Text>
+                  <IconSymbol name="chevron.right" size={16} color={colors.primary} />
+                </Pressable>
               </View>
             </View>
           </View>
@@ -420,6 +538,29 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 20,
   },
+  trackingStats: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  trackingStat: {
+    flex: 1,
+    backgroundColor: colors.background,
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    gap: 4,
+  },
+  trackingStatLabel: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontWeight: '600',
+  },
+  trackingStatValue: {
+    fontSize: 16,
+    color: colors.text,
+    fontWeight: '700',
+  },
   startTrackingButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -431,6 +572,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 16,
   },
+  stopTrackingButton: {
+    backgroundColor: colors.secondary,
+  },
   startTrackingText: {
     color: '#ffffff',
     fontSize: 16,
@@ -440,18 +584,38 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     borderRadius: 8,
     padding: 16,
+  },
+  leaderboardHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
+    marginBottom: 8,
   },
   leaderboardTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: colors.text,
-    marginBottom: 4,
   },
   leaderboardSubtitle: {
     fontSize: 13,
     color: colors.textSecondary,
-    textAlign: 'center',
+    marginBottom: 12,
+  },
+  viewLeaderboardButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.card,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  viewLeaderboardText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
   },
   settingRow: {
     flexDirection: 'row',

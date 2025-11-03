@@ -84,8 +84,7 @@ export default function MessagesScreen() {
 
   const handleComposeMessage = () => {
     console.log('Compose new message');
-    // In a real app, this would navigate to a compose message screen
-    // router.push('/(tabs)/messages/compose');
+    router.push('/(tabs)/messages/compose');
   };
 
   const renderMessage = ({ item }: { item: Message }) => (
