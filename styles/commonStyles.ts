@@ -1,18 +1,18 @@
 
 import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
 
-// Avid Outdoorsman Color Palette
+// Avid Outdoorsman Color Palette - Dark Theme
 export const colors = {
-  background: '#f0f4f3',        // Light gray, providing a clean backdrop
-  text: '#2c3e50',              // Dark blue-gray, for readability
-  textSecondary: '#7f8c8d',     // Medium gray, for less important text
+  background: '#000000',        // Black background
+  text: '#ffffff',              // White text for readability on black
+  textSecondary: '#a0a0a0',     // Light gray for secondary text
   primary: '#3498db',           // Blue, for main interactive elements
   secondary: '#e74c3c',         // Red, for alerts or secondary actions
   accent: '#f39c12',            // Orange, for highlights and points of interest
-  card: '#ffffff',              // White, for content containers
+  card: '#1a1a1a',              // Dark gray for content containers
   highlight: '#2ecc71',         // Green, for positive confirmations or highlights
-  border: '#d4d9d8',            // Light border color
-  shadow: 'rgba(0, 0, 0, 0.1)', // Shadow color
+  border: '#333333',            // Dark border color
+  shadow: 'rgba(0, 0, 0, 0.5)', // Shadow color
 };
 
 export const buttonStyles = StyleSheet.create({
