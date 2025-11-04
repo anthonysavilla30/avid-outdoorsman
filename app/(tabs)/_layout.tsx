@@ -128,6 +128,60 @@ export default function TabLayout() {
             href: null,
           }}
         />
+        <Tabs.Screen
+          name="activity-tracker"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="trips"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="offline-maps"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="recommendations"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="health"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="supabase-status"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="auth"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="messages/compose"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="messages/conversation"
+          options={{
+            href: null,
+          }}
+        />
       </Tabs>
     );
   }
@@ -249,6 +303,60 @@ export default function TabLayout() {
         />
         <Tabs.Screen
           name="saved"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="activity-tracker"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="trips"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="offline-maps"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="recommendations"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="health"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="supabase-status"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="auth"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="messages/compose"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="messages/conversation"
           options={{
             href: null,
           }}

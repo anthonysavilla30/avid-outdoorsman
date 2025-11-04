@@ -13,6 +13,10 @@ export const colors = {
   highlight: '#2ecc71',         // Green, for positive confirmations or highlights
   border: '#333333',            // Dark border color
   shadow: 'rgba(0, 0, 0, 0.5)', // Shadow color
+  success: '#2ecc71',           // Green for success states
+  error: '#e74c3c',             // Red for error states
+  warning: '#f39c12',           // Orange for warning states
+  danger: '#c0392b',            // Dark red for danger states
 };
 
 export const buttonStyles = StyleSheet.create({
