@@ -1,92 +1,208 @@
 
-import React from 'react';
+import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
-import { NativeTabs, Icon, Label } from 'expo-router/unstable-native-tabs';
-import { Stack } from 'expo-router';
-import FloatingTabBar, { TabBarItem } from '@/components/FloatingTabBar';
+import { IconSymbol } from '@/components/IconSymbol';
+import FloatingTabBar from '@/components/FloatingTabBar';
 import { colors } from '@/styles/commonStyles';
 
 export default function TabLayout() {
-  // Define the tabs configuration
-  const tabs: TabBarItem[] = [
-    {
-      name: '(home)',
-      route: '/(tabs)/(home)/',
-      icon: 'house.fill',
-      label: 'Feed',
-    },
-    {
-      name: 'explore',
-      route: '/(tabs)/explore',
-      icon: 'person.2.fill',
-      label: 'Explore',
-    },
-    {
-      name: 'post',
-      route: '/(tabs)/(home)/create-post',
-      icon: 'plus.circle.fill',
-      label: 'Post',
-    },
-    {
-      name: 'weather',
-      route: '/(tabs)/weather',
-      icon: 'cloud.sun.fill',
-      label: 'Weather',
-    },
-    {
-      name: 'profile',
-      route: '/(tabs)/profile',
-      icon: 'person.fill',
-      label: 'Profile',
-    },
-  ];
+  const isIOS = Platform.OS === 'ios';
 
-  // Use NativeTabs for iOS, custom FloatingTabBar for Android and Web
-  if (Platform.OS === 'ios') {
+  if (isIOS) {
     return (
-      <NativeTabs>
-        <NativeTabs.Trigger name="(home)">
-          <Icon sf="house.fill" drawable="ic_home" />
-          <Label>Feed</Label>
-        </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="explore">
-          <Icon sf="person.2.fill" drawable="ic_explore" />
-          <Label>Explore</Label>
-        </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="(home)/create-post">
-          <Icon sf="plus.circle.fill" drawable="ic_add" />
-          <Label>Post</Label>
-        </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="weather">
-          <Icon sf="cloud.sun.fill" drawable="ic_weather" />
-          <Label>Weather</Label>
-        </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="profile">
-          <Icon sf="person.fill" drawable="ic_profile" />
-          <Label>Profile</Label>
-        </NativeTabs.Trigger>
-      </NativeTabs>
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarActiveTintColor: colors.primary,
+          tabBarInactiveTintColor: colors.text,
+          tabBarStyle: {
+            backgroundColor: colors.background,
+            borderTopColor: colors.border,
+          },
+        }}
+      >
+        <Tabs.Screen
+          name="(home)"
+          options={{
+            title: 'Home',
+            tabBarIcon: ({ color }) => <IconSymbol name="house.fill" color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="explore"
+          options={{
+            title: 'Explore',
+            tabBarIcon: ({ color }) => <IconSymbol name="person.2.fill" color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="map"
+          options={{
+            title: 'Map',
+            tabBarIcon: ({ color }) => <IconSymbol name="map.fill" color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="spots"
+          options={{
+            title: 'Spots',
+            tabBarIcon: ({ color }) => <IconSymbol name="star.fill" color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="regulations"
+          options={{
+            title: 'Regulations',
+            tabBarIcon: ({ color }) => <IconSymbol name="doc.text.fill" color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="weather"
+          options={{
+            title: 'Weather',
+            tabBarIcon: ({ color }) => <IconSymbol name="cloud.sun.fill" color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="gear"
+          options={{
+            title: 'Gear',
+            tabBarIcon: ({ color }) => <IconSymbol name="backpack.fill" color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="profile"
+          options={{
+            title: 'Profile',
+            tabBarIcon: ({ color }) => <IconSymbol name="person.fill" color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="messages"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="notifications"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="badges"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="leaderboard"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="spot-detail"
+          options={{
+            href: null,
+          }}
+        />
+      </Tabs>
     );
   }
 
-  // For Android and Web, use Stack navigation with custom floating tab bar
   return (
     <>
-      <Stack
+      <Tabs
         screenOptions={{
           headerShown: false,
-          animation: 'none',
         }}
+        tabBar={() => (
+          <FloatingTabBar
+            tabs={[
+              {
+                route: '/(tabs)/(home)',
+                label: 'Home',
+                icon: 'house.fill',
+              },
+              {
+                route: '/(tabs)/explore',
+                label: 'Explore',
+                icon: 'person.2.fill',
+              },
+              {
+                route: '/(tabs)/map',
+                label: 'Map',
+                icon: 'map.fill',
+              },
+              {
+                route: '/(tabs)/spots',
+                label: 'Spots',
+                icon: 'star.fill',
+              },
+              {
+                route: '/(tabs)/regulations',
+                label: 'Rules',
+                icon: 'doc.text.fill',
+              },
+              {
+                route: '/(tabs)/weather',
+                label: 'Weather',
+                icon: 'cloud.sun.fill',
+              },
+              {
+                route: '/(tabs)/gear',
+                label: 'Gear',
+                icon: 'backpack.fill',
+              },
+              {
+                route: '/(tabs)/profile',
+                label: 'Profile',
+                icon: 'person.fill',
+              },
+            ]}
+          />
+        )}
       >
-        <Stack.Screen name="(home)" />
-        <Stack.Screen name="explore" />
-        <Stack.Screen name="weather" />
-        <Stack.Screen name="profile" />
-        <Stack.Screen name="map" />
-        <Stack.Screen name="messages" />
-        <Stack.Screen name="notifications" />
-      </Stack>
-      <FloatingTabBar tabs={tabs} />
+        <Tabs.Screen name="(home)" />
+        <Tabs.Screen name="explore" />
+        <Tabs.Screen name="map" />
+        <Tabs.Screen name="spots" />
+        <Tabs.Screen name="regulations" />
+        <Tabs.Screen name="weather" />
+        <Tabs.Screen name="gear" />
+        <Tabs.Screen name="profile" />
+        <Tabs.Screen
+          name="messages"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="notifications"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="badges"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="leaderboard"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="spot-detail"
+          options={{
+            href: null,
+          }}
+        />
+      </Tabs>
     </>
   );
 }
