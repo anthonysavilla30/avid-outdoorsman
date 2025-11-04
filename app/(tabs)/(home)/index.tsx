@@ -6,8 +6,11 @@ import { colors } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import ActivityFilter from '@/components/ActivityFilter';
 import PostCard from '@/components/PostCard';
+import AdvancedFilterModal from '@/components/AdvancedFilterModal';
 import { mockPosts } from '@/data/mockPosts';
 import { ActivityType } from '@/types/Post';
+import { AdvancedFilter, defaultFilter } from '@/types/Filter';
+import { FilterEngine } from '@/utils/filterEngine';
 
 type RadiusFilter = 'all' | '5-10' | '10-20' | '20-50' | '50-100';
 
@@ -16,6 +19,11 @@ export default function HomeScreen() {
   const [selectedActivity, setSelectedActivity] = useState<ActivityType>('all');
   const [selectedRadius, setSelectedRadius] = useState<RadiusFilter>('all');
   const [showRadiusFilter, setShowRadiusFilter] = useState(false);
+  const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
+  const [advancedFilter, setAdvancedFilter] = useState<AdvancedFilter>(defaultFilter);
+
+  const availableTags = FilterEngine.getAvailableTags(mockPosts);
+  const availableWeather = FilterEngine.getAvailableWeather(mockPosts);
 
   const filteredPosts = mockPosts.filter(post => {
     // Filter by activity
@@ -43,6 +51,9 @@ export default function HomeScreen() {
     return true;
   });
 
+  // Apply advanced filters
+  const finalFilteredPosts = FilterEngine.applyFilters(filteredPosts, advancedFilter);
+
   const handleCreatePost = () => {
     router.push('/(tabs)/(home)/create-post');
   };
@@ -67,6 +78,10 @@ export default function HomeScreen() {
     router.push('/(tabs)/search');
   };
 
+  const handleApplyAdvancedFilter = (filter: AdvancedFilter) => {
+    setAdvancedFilter(filter);
+  };
+
   const radiusOptions: { value: RadiusFilter; label: string }[] = [
     { value: 'all', label: 'All Posts' },
     { value: '5-10', label: '5-10 miles' },
@@ -74,6 +89,17 @@ export default function HomeScreen() {
     { value: '20-50', label: '20-50 miles' },
     { value: '50-100', label: '50-100 miles' },
   ];
+
+  const hasActiveFilters = 
+    advancedFilter.activities.length > 0 ||
+    advancedFilter.difficulty.length > 0 ||
+    advancedFilter.weather.length > 0 ||
+    advancedFilter.tags.length > 0 ||
+    advancedFilter.minLikes > 0 ||
+    advancedFilter.hasImages ||
+    advancedFilter.crowded !== null ||
+    advancedFilter.dateRange.start !== null ||
+    advancedFilter.dateRange.end !== null;
 
   const renderHeader = () => (
     <View style={styles.headerContainer}>
@@ -106,8 +132,8 @@ export default function HomeScreen() {
         <Text style={styles.subtitle}>Real conditions. Right now.</Text>
       </View>
       
-      {/* Radius Filter */}
-      <View style={styles.radiusFilterContainer}>
+      {/* Filter Controls */}
+      <View style={styles.filterControls}>
         <Pressable 
           style={styles.radiusFilterButton}
           onPress={() => setShowRadiusFilter(!showRadiusFilter)}
@@ -122,37 +148,59 @@ export default function HomeScreen() {
             size={16} 
           />
         </Pressable>
-        
-        {showRadiusFilter && (
-          <View style={styles.radiusDropdown}>
-            {radiusOptions.map((option) => (
-              <Pressable
-                key={option.value}
-                style={[
-                  styles.radiusOption,
-                  selectedRadius === option.value && styles.radiusOptionActive,
-                ]}
-                onPress={() => {
-                  setSelectedRadius(option.value);
-                  setShowRadiusFilter(false);
-                }}
-              >
-                <Text
-                  style={[
-                    styles.radiusOptionText,
-                    selectedRadius === option.value && styles.radiusOptionTextActive,
-                  ]}
-                >
-                  {option.label}
-                </Text>
-                {selectedRadius === option.value && (
-                  <IconSymbol name="checkmark" color={colors.primary} size={20} />
-                )}
-              </Pressable>
-            ))}
-          </View>
-        )}
+
+        <Pressable 
+          style={[styles.advancedFilterButton, hasActiveFilters && styles.advancedFilterButtonActive]}
+          onPress={() => setShowAdvancedFilter(true)}
+        >
+          <IconSymbol 
+            name="slider.horizontal.3" 
+            color={hasActiveFilters ? '#ffffff' : colors.primary} 
+            size={20} 
+          />
+          <Text style={[
+            styles.advancedFilterButtonText,
+            hasActiveFilters && styles.advancedFilterButtonTextActive
+          ]}>
+            Filters
+          </Text>
+          {hasActiveFilters && (
+            <View style={styles.filterBadge}>
+              <Text style={styles.filterBadgeText}>•</Text>
+            </View>
+          )}
+        </Pressable>
       </View>
+      
+      {showRadiusFilter && (
+        <View style={styles.radiusDropdown}>
+          {radiusOptions.map((option) => (
+            <Pressable
+              key={option.value}
+              style={[
+                styles.radiusOption,
+                selectedRadius === option.value && styles.radiusOptionActive,
+              ]}
+              onPress={() => {
+                setSelectedRadius(option.value);
+                setShowRadiusFilter(false);
+              }}
+            >
+              <Text
+                style={[
+                  styles.radiusOptionText,
+                  selectedRadius === option.value && styles.radiusOptionTextActive,
+                ]}
+              >
+                {option.label}
+              </Text>
+              {selectedRadius === option.value && (
+                <IconSymbol name="checkmark" color={colors.primary} size={20} />
+              )}
+            </Pressable>
+          ))}
+        </View>
+      )}
       
       <ActivityFilter
         selectedActivity={selectedActivity}
@@ -200,7 +248,7 @@ export default function HomeScreen() {
       )}
       <View style={styles.container}>
         <FlatList
-          data={filteredPosts}
+          data={finalFilteredPosts}
           renderItem={({ item }) => <PostCard post={item} />}
           keyExtractor={(item) => item.id}
           ListHeaderComponent={renderHeader}
@@ -211,6 +259,15 @@ export default function HomeScreen() {
           showsVerticalScrollIndicator={false}
         />
       </View>
+
+      <AdvancedFilterModal
+        visible={showAdvancedFilter}
+        onClose={() => setShowAdvancedFilter(false)}
+        filter={advancedFilter}
+        onApply={handleApplyAdvancedFilter}
+        availableTags={availableTags}
+        availableWeather={availableWeather}
+      />
     </>
   );
 }
@@ -284,11 +341,14 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontWeight: '500',
   },
-  radiusFilterContainer: {
+  filterControls: {
+    flexDirection: 'row',
     paddingHorizontal: 16,
     marginBottom: 12,
+    gap: 8,
   },
   radiusFilterButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
@@ -305,10 +365,44 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text,
   },
+  advancedFilterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.background,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  advancedFilterButtonActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  advancedFilterButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  advancedFilterButtonTextActive: {
+    color: '#ffffff',
+  },
+  filterBadge: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#ffffff',
+  },
+  filterBadgeText: {
+    fontSize: 8,
+    color: '#ffffff',
+  },
   radiusDropdown: {
     backgroundColor: colors.card,
     borderRadius: 12,
-    marginTop: 8,
+    marginHorizontal: 16,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: colors.border,
     overflow: 'hidden',
