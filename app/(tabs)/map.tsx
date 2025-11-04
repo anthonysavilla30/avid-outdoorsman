@@ -4,11 +4,12 @@ import { mockLandmarks } from '@/data/mockLandmarks';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { Stack, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import LandmarkModal from '@/components/LandmarkModal';
 import { IconSymbol } from '@/components/IconSymbol';
 import { Landmark } from '@/types/Landmark';
 import MapFeatureCard from '@/components/MapFeatureCard';
+import * as Location from 'expo-location';
 import {
   mockSkiResorts,
   mockNationalForests,
@@ -28,6 +29,8 @@ export default function MapScreen() {
   const [mapViewType, setMapViewType] = useState<MapViewType>('standard');
   const [searchQuery, setSearchQuery] = useState('');
   const [showLayersModal, setShowLayersModal] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState<Location.LocationObject | null>(null);
+  const [hasLocationPermission, setHasLocationPermission] = useState(false);
   const [enabledLayers, setEnabledLayers] = useState({
     contourLines: false,
     blmBoundaries: false,
@@ -36,7 +39,40 @@ export default function MapScreen() {
     waterSources: false,
   });
 
+  useEffect(() => {
+    requestLocationPermission();
+  }, []);
+
+  const requestLocationPermission = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      setHasLocationPermission(status === 'granted');
+      
+      if (status === 'granted') {
+        getCurrentLocation();
+      }
+    } catch (error) {
+      console.error('Error requesting location permission:', error);
+    }
+  };
+
+  const getCurrentLocation = async () => {
+    try {
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+      setCurrentLocation(location);
+      console.log('Current location:', location);
+    } catch (error) {
+      console.error('Error getting current location:', error);
+    }
+  };
+
   const handleAddLandmark = () => {
+    if (!currentLocation) {
+      Alert.alert('Location Required', 'Please enable location services to add a landmark.');
+      return;
+    }
     setIsModalVisible(true);
   };
 
@@ -49,8 +85,8 @@ export default function MapScreen() {
     const newLandmark: Landmark = {
       id: Date.now().toString(),
       ...landmarkData,
-      latitude: 39.7392 + (Math.random() - 0.5) * 0.1,
-      longitude: -104.9903 + (Math.random() - 0.5) * 0.1,
+      latitude: currentLocation?.coords.latitude || 39.7392,
+      longitude: currentLocation?.coords.longitude || -104.9903,
       createdBy: {
         id: 'current-user',
         name: 'Current User',
@@ -112,7 +148,7 @@ export default function MapScreen() {
   };
 
   const handleTrackMilesPress = () => {
-    router.push('/(tabs)/profile');
+    router.push('/(tabs)/activity-tracker');
   };
 
   const handleMessagesPress = () => {
@@ -201,7 +237,7 @@ export default function MapScreen() {
                 </Pressable>
                 <Pressable style={styles.trackMilesButton} onPress={handleTrackMilesPress}>
                   <IconSymbol name="figure.run" color="#ffffff" size={20} />
-                  <Text style={styles.trackMilesText}>Track Miles</Text>
+                  <Text style={styles.trackMilesText}>Track Activity</Text>
                 </Pressable>
               </View>
               <View style={styles.topRight}>
@@ -222,6 +258,51 @@ export default function MapScreen() {
               This is a comprehensive list of outdoor recreation areas.
             </Text>
           </View>
+
+          {/* Current Location Display */}
+          {hasLocationPermission && currentLocation && (
+            <View style={styles.locationCard}>
+              <View style={styles.locationHeader}>
+                <IconSymbol name="location.fill" size={24} color={colors.primary} />
+                <Text style={styles.locationTitle}>Your Location</Text>
+                <Pressable onPress={getCurrentLocation} style={styles.refreshButton}>
+                  <IconSymbol name="arrow.clockwise" size={20} color={colors.primary} />
+                </Pressable>
+              </View>
+              <Text style={styles.locationCoords}>
+                {currentLocation.coords.latitude.toFixed(6)}, {currentLocation.coords.longitude.toFixed(6)}
+              </Text>
+              <View style={styles.locationStats}>
+                <View style={styles.locationStat}>
+                  <Text style={styles.locationStatLabel}>Accuracy</Text>
+                  <Text style={styles.locationStatValue}>
+                    {currentLocation.coords.accuracy?.toFixed(0) || 'N/A'}m
+                  </Text>
+                </View>
+                {currentLocation.coords.altitude && (
+                  <View style={styles.locationStat}>
+                    <Text style={styles.locationStatLabel}>Altitude</Text>
+                    <Text style={styles.locationStatValue}>
+                      {(currentLocation.coords.altitude * 3.28084).toFixed(0)}ft
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
+
+          {!hasLocationPermission && (
+            <View style={styles.permissionCard}>
+              <IconSymbol name="location.slash.fill" size={32} color={colors.error} />
+              <Text style={styles.permissionTitle}>Location Permission Required</Text>
+              <Text style={styles.permissionText}>
+                Enable location services to see your current position and add landmarks
+              </Text>
+              <Pressable style={styles.permissionButton} onPress={requestLocationPermission}>
+                <Text style={styles.permissionButtonText}>Enable Location</Text>
+              </Pressable>
+            </View>
+          )}
 
           {/* Location Search */}
           <View style={styles.searchContainer}>
@@ -322,8 +403,13 @@ export default function MapScreen() {
                mapViewType === 'hybrid' ? 'Hybrid View' : 'Standard Map View'}
             </Text>
             <Text style={styles.placeholderSubtext}>
-              Interactive map with location search and custom layers
+              Interactive map with location tracking and custom layers
             </Text>
+            {currentLocation && (
+              <Text style={styles.placeholderLocation}>
+                📍 {currentLocation.coords.latitude.toFixed(4)}, {currentLocation.coords.longitude.toFixed(4)}
+              </Text>
+            )}
           </View>
 
           <ScrollView 
@@ -536,8 +622,8 @@ export default function MapScreen() {
           visible={isModalVisible}
           onClose={() => setIsModalVisible(false)}
           onSave={handleSaveLandmark}
-          latitude={39.7392}
-          longitude={-104.9903}
+          latitude={currentLocation?.coords.latitude || 39.7392}
+          longitude={currentLocation?.coords.longitude || -104.9903}
         />
 
         {/* Layers Modal */}
@@ -682,6 +768,86 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 20,
   },
+  locationCard: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    boxShadow: `0px 2px 8px ${colors.shadow}`,
+    elevation: 3,
+  },
+  locationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  locationTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+    flex: 1,
+  },
+  refreshButton: {
+    padding: 4,
+  },
+  locationCoords: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    marginBottom: 16,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+  },
+  locationStats: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  locationStat: {
+    flex: 1,
+  },
+  locationStatLabel: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginBottom: 4,
+  },
+  locationStatValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  permissionCard: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 16,
+    boxShadow: `0px 2px 8px ${colors.shadow}`,
+    elevation: 3,
+  },
+  permissionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  permissionText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  permissionButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  permissionButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
   searchContainer: {
     flexDirection: 'row',
     gap: 8,
@@ -815,6 +981,12 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 8,
+  },
+  placeholderLocation: {
+    fontSize: 14,
+    color: colors.primary,
+    marginTop: 12,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   filterContainer: {
     marginBottom: 16,

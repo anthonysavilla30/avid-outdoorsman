@@ -19,9 +19,12 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "Avid Outdoorsman needs your location to show nearby outdoor spots, trails, and connect you with local outdoorsmen.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Avid Outdoorsman needs your location to track your outdoor activities and show nearby updates.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Avid Outdoorsman needs your location to track your outdoor activities and show nearby updates even when the app is in the background.",
+        "NSLocationAlwaysUsageDescription": "Avid Outdoorsman needs your location to track your outdoor activities and show nearby updates even when the app is in the background.",
+        "UIBackgroundModes": ["location"],
         "NSCameraUsageDescription": "Avid Outdoorsman needs camera access to let you share photos of trails, catches, and outdoor conditions.",
-        "NSPhotoLibraryUsageDescription": "Avid Outdoorsman needs photo library access to let you share images from your gallery."
+        "NSPhotoLibraryUsageDescription": "Avid Outdoorsman needs photo library access to let you share images from your gallery.",
+        "NSMotionUsageDescription": "Avid Outdoorsman uses motion data to track your outdoor activities and calculate distance and elevation."
       },
       "buildNumber": "1"
     },
@@ -36,6 +39,9 @@
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE"
@@ -49,6 +55,16 @@
       "expo-font",
       "expo-router",
       "expo-web-browser",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Avid Outdoorsman to use your location to track activities and show nearby outdoor updates.",
+          "locationAlwaysPermission": "Allow Avid Outdoorsman to use your location to track activities and show nearby outdoor updates.",
+          "locationWhenInUsePermission": "Allow Avid Outdoorsman to use your location to show nearby outdoor spots and trails.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
       [
         "expo-image-picker",
         {
