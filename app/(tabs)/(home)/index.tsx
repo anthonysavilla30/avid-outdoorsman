@@ -210,15 +210,6 @@ export default function HomeScreen() {
           ]}
           showsVerticalScrollIndicator={false}
         />
-        
-        {/* Floating Action Button */}
-        <Pressable 
-          style={styles.fab}
-          onPress={handleCreatePost}
-          android_ripple={{ color: 'rgba(255, 255, 255, 0.3)' }}
-        >
-          <IconSymbol name="plus" color="#ffffff" size={28} />
-        </Pressable>
       </View>
     </>
   );
@@ -350,19 +341,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     marginRight: 8,
-  },
-  fab: {
-    position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 90 : 100,
-    right: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: `0px 4px 12px ${colors.shadow}`,
-    elevation: 8,
-    zIndex: 1000,
   },
 });
