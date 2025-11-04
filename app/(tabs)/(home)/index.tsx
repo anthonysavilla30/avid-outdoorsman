@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { FlatList, StyleSheet, View, Text, Pressable, Platform } from 'react-native';
+import { FlatList, StyleSheet, View, Text, Pressable, Platform, RefreshControl } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -11,21 +11,32 @@ import { mockPosts } from '@/data/mockPosts';
 import { ActivityType } from '@/types/Post';
 import { AdvancedFilter, defaultFilter } from '@/types/Filter';
 import { FilterEngine } from '@/utils/filterEngine';
+import { usePosts } from '@/hooks/usePosts';
+import { useAuth } from '@/contexts/AuthContext';
 
 type RadiusFilter = 'all' | '5-10' | '10-20' | '20-50' | '50-100';
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { user, isConfigured } = useAuth();
   const [selectedActivity, setSelectedActivity] = useState<ActivityType>('all');
   const [selectedRadius, setSelectedRadius] = useState<RadiusFilter>('all');
   const [showRadiusFilter, setShowRadiusFilter] = useState(false);
   const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
   const [advancedFilter, setAdvancedFilter] = useState<AdvancedFilter>(defaultFilter);
 
-  const availableTags = FilterEngine.getAvailableTags(mockPosts);
-  const availableWeather = FilterEngine.getAvailableWeather(mockPosts);
+  // Use backend posts if configured, otherwise use mock data
+  const { posts: backendPosts, loading, refresh } = usePosts({
+    activity: selectedActivity !== 'all' ? selectedActivity : undefined,
+  });
 
-  const filteredPosts = mockPosts.filter(post => {
+  // Use backend posts if available, otherwise fall back to mock data
+  const postsToUse = isConfigured ? backendPosts : mockPosts;
+
+  const availableTags = FilterEngine.getAvailableTags(postsToUse);
+  const availableWeather = FilterEngine.getAvailableWeather(postsToUse);
+
+  const filteredPosts = postsToUse.filter(post => {
     // Filter by activity
     if (selectedActivity !== 'all' && post.activity !== selectedActivity) {
       return false;
@@ -257,6 +268,13 @@ export default function HomeScreen() {
             Platform.OS !== 'ios' && styles.listContentWithTabBar,
           ]}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={loading}
+              onRefresh={refresh}
+              tintColor={colors.primary}
+            />
+          }
         />
       </View>
 
