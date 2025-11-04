@@ -36,13 +36,6 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="map"
-          options={{
-            title: 'Map',
-            tabBarIcon: ({ color }) => <IconSymbol name="map.fill" color={color} />,
-          }}
-        />
-        <Tabs.Screen
           name="weather"
           options={{
             title: 'Weather',
@@ -57,6 +50,12 @@ export default function TabLayout() {
           }}
         />
         {/* Hidden tabs - accessible via navigation */}
+        <Tabs.Screen
+          name="map"
+          options={{
+            href: null,
+          }}
+        />
         <Tabs.Screen
           name="spots"
           options={{
@@ -153,9 +152,9 @@ export default function TabLayout() {
                 icon: 'safari.fill',
               },
               {
-                route: '/(tabs)/map',
-                label: 'Map',
-                icon: 'map.fill',
+                route: '/(tabs)/(home)/create-post',
+                label: 'Post',
+                icon: 'plus.circle.fill',
               },
               {
                 route: '/(tabs)/weather',
@@ -173,10 +172,15 @@ export default function TabLayout() {
       >
         <Tabs.Screen name="(home)" />
         <Tabs.Screen name="explore" />
-        <Tabs.Screen name="map" />
         <Tabs.Screen name="weather" />
         <Tabs.Screen name="profile" />
         {/* Hidden tabs - accessible via navigation */}
+        <Tabs.Screen
+          name="map"
+          options={{
+            href: null,
+          }}
+        />
         <Tabs.Screen
           name="spots"
           options={{

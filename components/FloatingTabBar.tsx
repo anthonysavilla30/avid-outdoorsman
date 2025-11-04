@@ -50,10 +50,13 @@ export default function FloatingTabBar({
 
   const activeIndex = tabs.findIndex((tab) => {
     if (pathname === '/' || pathname === '/(tabs)/(home)/' || pathname === '/(tabs)/(home)') {
-      return tab.route.includes('(home)');
+      return tab.route.includes('(home)') && !tab.route.includes('create-post');
     }
     if (pathname.includes('create-post')) {
-      return tab.route.includes('(home)');
+      return tab.route.includes('create-post');
+    }
+    if (pathname.includes('post-detail')) {
+      return tab.route.includes('(home)') && !tab.route.includes('create-post');
     }
     // Extract the tab name from the route
     const tabName = tab.route.split('/').pop();
