@@ -170,18 +170,6 @@ export default function TabLayout() {
             href: null,
           }}
         />
-        <Tabs.Screen
-          name="messages/compose"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="messages/conversation"
-          options={{
-            href: null,
-          }}
-        />
       </Tabs>
     );
   }
@@ -345,18 +333,6 @@ export default function TabLayout() {
         />
         <Tabs.Screen
           name="auth"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="messages/compose"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="messages/conversation"
           options={{
             href: null,
           }}

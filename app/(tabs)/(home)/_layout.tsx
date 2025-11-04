@@ -1,3 +1,4 @@
+
 import { Platform } from 'react-native';
 import { Stack } from 'expo-router';
 
@@ -17,6 +18,14 @@ export default function HomeLayout() {
           headerShown: true,
           title: 'Post',
           presentation: 'card',
+        }}
+      />
+      <Stack.Screen
+        name="create-post"
+        options={{
+          headerShown: true,
+          title: 'Create Post',
+          presentation: 'modal',
         }}
       />
     </Stack>
