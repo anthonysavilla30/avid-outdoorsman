@@ -69,6 +69,27 @@ const styles = StyleSheet.create({
   filterButtonTextActive: {
     color: '#FFFFFF',
   },
+  searchContainer: {
+    marginBottom: 12,
+  },
+  searchInput: {
+    backgroundColor: colors.cardBackground,
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    fontSize: 14,
+    color: colors.text,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  stateScrollContainer: {
+    marginBottom: 12,
+    maxHeight: 200,
+  },
+  stateScrollContent: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
   stateButton: {
     paddingVertical: 10,
     paddingHorizontal: 16,
@@ -206,21 +227,37 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 12,
   },
-  stateScrollContainer: {
-    marginBottom: 12,
-  },
-  stateScrollContent: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  stateCount: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginBottom: 8,
   },
 });
 
 export default function RegulationsScreen() {
-  const [selectedState, setSelectedState] = useState<string>('Colorado');
+  const [selectedState, setSelectedState] = useState<string>('Alabama');
   const [selectedCategory, setSelectedCategory] = useState<ActivityCategory | 'all'>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const router = useRouter();
 
-  const states = ['Colorado', 'Montana', 'Wyoming', 'Idaho', 'Utah'];
+  // All 50 US states
+  const allStates = [
+    'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California',
+    'Colorado', 'Connecticut', 'Delaware', 'Florida', 'Georgia',
+    'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa',
+    'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland',
+    'Massachusetts', 'Michigan', 'Minnesota', 'Mississippi', 'Missouri',
+    'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey',
+    'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio',
+    'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina',
+    'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont',
+    'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming'
+  ];
+
+  // Filter states based on search query
+  const filteredStates = allStates.filter(state =>
+    state.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const filteredRegulations = mockRegulations.filter((reg) => {
     const stateMatch = selectedState === 'all' || reg.state === selectedState;
@@ -354,7 +391,7 @@ export default function RegulationsScreen() {
         <View style={styles.header}>
           <Text style={styles.title}>Hunting & Fishing Regulations</Text>
           <Text style={styles.subtitle}>
-            Season dates, bag limits, and licensing requirements
+            Season dates, bag limits, and licensing requirements for all 50 states
           </Text>
         </View>
 
@@ -412,9 +449,24 @@ export default function RegulationsScreen() {
           </View>
 
           <Text style={styles.sectionTitle}>State</Text>
-          <View style={styles.stateScrollContainer}>
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search states..."
+              placeholderTextColor={colors.textSecondary}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
+          <Text style={styles.stateCount}>
+            {filteredStates.length} of 50 states
+          </Text>
+          <ScrollView 
+            style={styles.stateScrollContainer}
+            showsVerticalScrollIndicator={true}
+          >
             <View style={styles.stateScrollContent}>
-              {states.map((state) => (
+              {filteredStates.map((state) => (
                 <Pressable
                   key={state}
                   style={[
@@ -434,7 +486,7 @@ export default function RegulationsScreen() {
                 </Pressable>
               ))}
             </View>
-          </View>
+          </ScrollView>
         </View>
 
         {filteredRegulations.length > 0 ? (
