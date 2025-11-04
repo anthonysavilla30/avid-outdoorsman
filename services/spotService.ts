@@ -1,5 +1,5 @@
 
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 import { Spot, Review, SpotType, DifficultyLevel } from '@/types/Review';
 import { mockSpots, mockReviews } from '@/data/mockSpots';
 
@@ -9,8 +9,9 @@ class SpotService {
     type?: SpotType;
     minRating?: number;
   }): Promise<{ data: Spot[]; error: Error | null }> {
-    if (!isSupabaseConfigured()) {
-      console.log('Supabase not configured, using mock data');
+    const supabase = getSupabase();
+    if (!supabase) {
+      console.log('⚠️ Supabase not configured, using mock data');
       return { data: mockSpots, error: null };
     }
 
@@ -41,7 +42,8 @@ class SpotService {
 
   // Get single spot
   async getSpot(spotId: string): Promise<{ data: Spot | null; error: Error | null }> {
-    if (!isSupabaseConfigured()) {
+    const supabase = getSupabase();
+    if (!supabase) {
       const spot = mockSpots.find(s => s.id === spotId);
       return { data: spot || null, error: null };
     }
@@ -64,7 +66,8 @@ class SpotService {
 
   // Create a new spot
   async createSpot(spot: Omit<Spot, 'id' | 'averageRating' | 'totalReviews'>): Promise<{ data: Spot | null; error: Error | null }> {
-    if (!isSupabaseConfigured()) {
+    const supabase = getSupabase();
+    if (!supabase) {
       return { data: null, error: new Error('Supabase not configured') };
     }
 
@@ -101,7 +104,8 @@ class SpotService {
 
   // Get reviews for a spot
   async getSpotReviews(spotId: string): Promise<{ data: Review[]; error: Error | null }> {
-    if (!isSupabaseConfigured()) {
+    const supabase = getSupabase();
+    if (!supabase) {
       const reviews = mockReviews.filter(r => r.spotId === spotId);
       return { data: reviews, error: null };
     }
@@ -131,7 +135,8 @@ class SpotService {
 
   // Add review to spot
   async addReview(review: Omit<Review, 'id' | 'date' | 'helpful'>): Promise<{ data: Review | null; error: Error | null }> {
-    if (!isSupabaseConfigured()) {
+    const supabase = getSupabase();
+    if (!supabase) {
       return { data: null, error: new Error('Supabase not configured') };
     }
 

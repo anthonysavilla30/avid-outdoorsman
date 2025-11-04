@@ -1,13 +1,14 @@
 
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 import { Post, ActivityType } from '@/types/Post';
 import { mockPosts } from '@/data/mockPosts';
 
 class PostService {
   // Create a new post
   async createPost(post: Omit<Post, 'id' | 'timestamp' | 'likes' | 'comments'>): Promise<{ data: Post | null; error: Error | null }> {
-    if (!isSupabaseConfigured()) {
-      console.log('Supabase not configured, using mock data');
+    const supabase = getSupabase();
+    if (!supabase) {
+      console.log('⚠️ Supabase not configured, using mock data');
       return { data: null, error: new Error('Supabase not configured') };
     }
 
@@ -44,8 +45,9 @@ class PostService {
     radius?: number;
     userLocation?: { latitude: number; longitude: number };
   }): Promise<{ data: Post[]; error: Error | null }> {
-    if (!isSupabaseConfigured()) {
-      console.log('Supabase not configured, using mock data');
+    const supabase = getSupabase();
+    if (!supabase) {
+      console.log('⚠️ Supabase not configured, using mock data');
       return { data: mockPosts, error: null };
     }
 
@@ -80,7 +82,8 @@ class PostService {
 
   // Get single post
   async getPost(postId: string): Promise<{ data: Post | null; error: Error | null }> {
-    if (!isSupabaseConfigured()) {
+    const supabase = getSupabase();
+    if (!supabase) {
       const post = mockPosts.find(p => p.id === postId);
       return { data: post || null, error: null };
     }
@@ -110,7 +113,8 @@ class PostService {
 
   // Like a post
   async likePost(postId: string): Promise<{ error: Error | null }> {
-    if (!isSupabaseConfigured()) {
+    const supabase = getSupabase();
+    if (!supabase) {
       return { error: new Error('Supabase not configured') };
     }
 
@@ -135,7 +139,8 @@ class PostService {
 
   // Unlike a post
   async unlikePost(postId: string): Promise<{ error: Error | null }> {
-    if (!isSupabaseConfigured()) {
+    const supabase = getSupabase();
+    if (!supabase) {
       return { error: new Error('Supabase not configured') };
     }
 
@@ -159,7 +164,8 @@ class PostService {
 
   // Add comment to post
   async addComment(postId: string, content: string): Promise<{ error: Error | null }> {
-    if (!isSupabaseConfigured()) {
+    const supabase = getSupabase();
+    if (!supabase) {
       return { error: new Error('Supabase not configured') };
     }
 

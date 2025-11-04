@@ -1,5 +1,5 @@
 
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 import { Alert } from 'react-native';
 
 export interface User {
@@ -21,8 +21,10 @@ export interface AuthResponse {
 class AuthService {
   // Sign up with email and password
   async signUp(email: string, password: string, name?: string): Promise<AuthResponse> {
-    if (!isSupabaseConfigured()) {
-      return { user: null, error: new Error('Supabase not configured') };
+    const supabase = getSupabase();
+    if (!supabase) {
+      console.warn('⚠️ Supabase not configured - sign up unavailable');
+      return { user: null, error: new Error('Supabase not configured. Please set up environment variables.') };
     }
 
     try {
@@ -73,8 +75,10 @@ class AuthService {
 
   // Sign in with email and password
   async signIn(email: string, password: string): Promise<AuthResponse> {
-    if (!isSupabaseConfigured()) {
-      return { user: null, error: new Error('Supabase not configured') };
+    const supabase = getSupabase();
+    if (!supabase) {
+      console.warn('⚠️ Supabase not configured - sign in unavailable');
+      return { user: null, error: new Error('Supabase not configured. Please set up environment variables.') };
     }
 
     try {
@@ -100,7 +104,9 @@ class AuthService {
 
   // Sign out
   async signOut(): Promise<{ error: Error | null }> {
-    if (!isSupabaseConfigured()) {
+    const supabase = getSupabase();
+    if (!supabase) {
+      console.warn('⚠️ Supabase not configured - sign out unavailable');
       return { error: new Error('Supabase not configured') };
     }
 
@@ -116,7 +122,8 @@ class AuthService {
 
   // Get current user
   async getCurrentUser(): Promise<User | null> {
-    if (!isSupabaseConfigured()) {
+    const supabase = getSupabase();
+    if (!supabase) {
       return null;
     }
 
@@ -133,7 +140,8 @@ class AuthService {
 
   // Get user profile
   async getUserProfile(userId: string): Promise<User | null> {
-    if (!isSupabaseConfigured()) {
+    const supabase = getSupabase();
+    if (!supabase) {
       return null;
     }
 
@@ -164,7 +172,9 @@ class AuthService {
 
   // Update user profile
   async updateProfile(userId: string, updates: Partial<User>): Promise<{ error: Error | null }> {
-    if (!isSupabaseConfigured()) {
+    const supabase = getSupabase();
+    if (!supabase) {
+      console.warn('⚠️ Supabase not configured - profile update unavailable');
       return { error: new Error('Supabase not configured') };
     }
 
@@ -190,7 +200,8 @@ class AuthService {
 
   // Listen to auth state changes
   onAuthStateChange(callback: (user: User | null) => void) {
-    if (!isSupabaseConfigured()) {
+    const supabase = getSupabase();
+    if (!supabase) {
       return { data: { subscription: { unsubscribe: () => {} } } };
     }
 
