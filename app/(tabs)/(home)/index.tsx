@@ -222,6 +222,9 @@ export default function HomeScreen() {
 
   const renderHeaderRight = () => (
     <View style={styles.headerButtonGroup}>
+      <Pressable style={styles.headerButton} onPress={handleCreatePost}>
+        <IconSymbol name="plus.circle.fill" color={colors.primary} size={28} />
+      </Pressable>
       <Pressable style={styles.headerButton} onPress={handleSearchPress}>
         <IconSymbol name="magnifyingglass" color={colors.primary} size={24} />
       </Pressable>
@@ -276,6 +279,14 @@ export default function HomeScreen() {
             />
           }
         />
+
+        {/* Floating Action Button for Create Post */}
+        <Pressable 
+          style={styles.fab}
+          onPress={handleCreatePost}
+        >
+          <IconSymbol name="plus" color="#ffffff" size={28} />
+        </Pressable>
       </View>
 
       <AdvancedFilterModal
@@ -453,5 +464,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     marginRight: 8,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: Platform.OS === 'ios' ? 90 : 90,
+    right: 20,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: `0px 4px 12px ${colors.shadow}`,
+    elevation: 8,
   },
 });
