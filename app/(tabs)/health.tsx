@@ -14,7 +14,7 @@ import { Stack, useRouter } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { HealthData, DailyGoals, WorkoutSession } from '@/types/Wearable';
-import * as Pedometer from 'expo-sensors/build/Pedometer';
+import * as Pedometer from 'expo-sensors/Pedometer';
 
 export default function HealthScreen() {
   const router = useRouter();
@@ -34,11 +34,6 @@ export default function HealthScreen() {
     activeMinutes: 60,
   });
 
-  useEffect(() => {
-    checkPedometerAvailability();
-    subscribeToPedometer();
-  }, []);
-
   const checkPedometerAvailability = async () => {
     const isAvailable = await Pedometer.isAvailableAsync();
     setIsPedometerAvailable(isAvailable);
@@ -56,6 +51,11 @@ export default function HealthScreen() {
 
     return () => subscription && subscription.remove();
   };
+
+  useEffect(() => {
+    checkPedometerAvailability();
+    subscribeToPedometer();
+  }, [subscribeToPedometer]);
 
   const updateHealthData = (steps: number) => {
     // Rough calculations - in production, these would be more accurate

@@ -4,7 +4,7 @@ import { mockLandmarks } from '@/data/mockLandmarks';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { Stack, useRouter } from 'expo-router';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import LandmarkModal from '@/components/LandmarkModal';
 import { IconSymbol } from '@/components/IconSymbol';
 import { Landmark } from '@/types/Landmark';
@@ -39,11 +39,7 @@ export default function MapScreen() {
     waterSources: false,
   });
 
-  useEffect(() => {
-    requestLocationPermission();
-  }, []);
-
-  const requestLocationPermission = async () => {
+  const requestLocationPermission = useCallback(async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       setHasLocationPermission(status === 'granted');
@@ -54,7 +50,11 @@ export default function MapScreen() {
     } catch (error) {
       console.error('Error requesting location permission:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    requestLocationPermission();
+  }, [requestLocationPermission]);
 
   const getCurrentLocation = async () => {
     try {

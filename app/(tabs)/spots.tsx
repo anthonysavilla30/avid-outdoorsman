@@ -194,7 +194,7 @@ export default function SpotsScreen() {
   const [selectedType, setSelectedType] = useState<SpotType | 'all'>('all');
   const router = useRouter();
 
-  const spotTypes: Array<{ value: SpotType | 'all'; label: string }> = [
+  const spotTypes: { value: SpotType | 'all'; label: string }[] = [
     { value: 'all', label: 'All Spots' },
     { value: 'trail', label: 'Trails' },
     { value: 'fishing-hole', label: 'Fishing' },
