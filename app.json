@@ -1,8 +1,8 @@
 
 {
   "expo": {
-    "name": "Natively",
-    "slug": "Natively",
+    "name": "Avid Outdoorsman",
+    "slug": "avid-outdoorsman",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/d0c49ce0-f490-4a5c-a88c-7f965f90667f.jpeg",
@@ -11,22 +11,35 @@
     "splash": {
       "image": "./assets/images/d0c49ce0-f490-4a5c-a88c-7f965f90667f.jpeg",
       "resizeMode": "contain",
-      "backgroundColor": "#E8DCC8"
+      "backgroundColor": "#1a1a1a"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.Natively",
+      "bundleIdentifier": "com.avidoutdoorsman.app",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
-      }
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocationWhenInUseUsageDescription": "Avid Outdoorsman needs your location to show nearby outdoor spots, trails, and connect you with local outdoorsmen.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Avid Outdoorsman needs your location to track your outdoor activities and show nearby updates.",
+        "NSCameraUsageDescription": "Avid Outdoorsman needs camera access to let you share photos of trails, catches, and outdoor conditions.",
+        "NSPhotoLibraryUsageDescription": "Avid Outdoorsman needs photo library access to let you share images from your gallery."
+      },
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/d0c49ce0-f490-4a5c-a88c-7f965f90667f.jpeg",
-        "backgroundColor": "#E8DCC8"
+        "backgroundColor": "#1a1a1a"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.Natively"
+      "package": "com.avidoutdoorsman.app",
+      "versionCode": 1,
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "favicon": "./assets/images/d0c49ce0-f490-4a5c-a88c-7f965f90667f.jpeg",
@@ -35,14 +48,24 @@
     "plugins": [
       "expo-font",
       "expo-router",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Avid Outdoorsman needs access to your photos to let you share outdoor experiences.",
+          "cameraPermission": "Avid Outdoorsman needs camera access to let you capture and share outdoor moments."
+        }
+      ]
     ],
-    "scheme": "natively",
+    "scheme": "avidoutdoorsman",
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
-      "router": {}
+      "router": {},
+      "eas": {
+        "projectId": "YOUR_PROJECT_ID_HERE"
+      }
     }
   }
 }
