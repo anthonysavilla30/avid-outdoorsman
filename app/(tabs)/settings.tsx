@@ -232,16 +232,22 @@ export default function SettingsScreen() {
             </View>
             <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
           </Pressable>
-          <Pressable style={styles.settingRow}>
+          <Pressable 
+            style={styles.settingRow}
+            onPress={() => router.push('/(tabs)/terms-conditions')}
+          >
             <View style={styles.settingLeft}>
               <IconSymbol name="doc.text" size={24} color={colors.text} />
-              <Text style={styles.settingText}>Terms of Service</Text>
+              <Text style={styles.settingText}>Terms & Conditions</Text>
             </View>
             <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
           </Pressable>
-          <Pressable style={styles.settingRow}>
+          <Pressable 
+            style={styles.settingRow}
+            onPress={() => router.push('/(tabs)/privacy-policy')}
+          >
             <View style={styles.settingLeft}>
-              <IconSymbol name="hand.raised" size={24} color={colors.text} />
+              <IconSymbol name="lock.shield" size={24} color={colors.text} />
               <Text style={styles.settingText}>Privacy Policy</Text>
             </View>
             <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
