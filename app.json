@@ -5,11 +5,11 @@
     "slug": "avid-outdoorsman",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/d0c49ce0-f490-4a5c-a88c-7f965f90667f.jpeg",
+    "icon": "./assets/images/app-icon.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/d0c49ce0-f490-4a5c-a88c-7f965f90667f.jpeg",
+      "image": "./assets/images/app-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#1a1a1a"
     },
@@ -30,7 +30,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/d0c49ce0-f490-4a5c-a88c-7f965f90667f.jpeg",
+        "foregroundImage": "./assets/images/app-icon.png",
         "backgroundColor": "#1a1a1a"
       },
       "edgeToEdgeEnabled": true,
@@ -48,7 +48,7 @@
       ]
     },
     "web": {
-      "favicon": "./assets/images/d0c49ce0-f490-4a5c-a88c-7f965f90667f.jpeg",
+      "favicon": "./assets/images/app-icon.png",
       "bundler": "metro"
     },
     "plugins": [
