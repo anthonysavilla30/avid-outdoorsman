@@ -20,7 +20,7 @@ import { BlurView } from 'expo-blur';
 import { colors } from '@/styles/commonStyles';
 
 export interface TabBarItem {
-  name: string;
+  name?: string;
   route: string;
   icon: string;
   label: string;
@@ -35,8 +35,8 @@ interface FloatingTabBarProps {
 
 export default function FloatingTabBar({
   tabs,
-  containerWidth = 380,
-  borderRadius = 28,
+  containerWidth = 360,
+  borderRadius = 30,
   bottomMargin = 20,
 }: FloatingTabBarProps) {
   const router = useRouter();
@@ -45,22 +45,19 @@ export default function FloatingTabBar({
 
   const handleTabPress = (route: string, index: number) => {
     console.log('Navigating to:', route);
-    // Center button (Post) - index 2
-    if (index === 2) {
-      router.push('/(tabs)/(home)/create-post' as any);
-    } else {
-      router.push(route as any);
-    }
+    router.push(route as any);
   };
 
   const activeIndex = tabs.findIndex((tab) => {
     if (pathname === '/' || pathname === '/(tabs)/(home)/' || pathname === '/(tabs)/(home)') {
-      return tab.name === '(home)';
+      return tab.route.includes('(home)');
     }
     if (pathname.includes('create-post')) {
-      return tab.name === 'post';
+      return tab.route.includes('(home)');
     }
-    return pathname.includes(tab.name);
+    // Extract the tab name from the route
+    const tabName = tab.route.split('/').pop();
+    return pathname.includes(tabName || '');
   });
 
   React.useEffect(() => {
@@ -103,38 +100,17 @@ export default function FloatingTabBar({
           <Animated.View style={[styles.indicator, indicatorStyle]} />
           {tabs.map((tab, index) => {
             const isActive = index === activeIndex;
-            const isCenterButton = index === 2; // Post button
-
-            if (isCenterButton) {
-              return (
-                <TouchableOpacity
-                  key={tab.name}
-                  style={styles.centerButtonContainer}
-                  onPress={() => handleTabPress(tab.route, index)}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.centerButton}>
-                    <IconSymbol
-                      name={tab.icon as any}
-                      size={36}
-                      color="#ffffff"
-                    />
-                  </View>
-                  <Text style={styles.centerLabel}>{tab.label}</Text>
-                </TouchableOpacity>
-              );
-            }
 
             return (
               <TouchableOpacity
-                key={tab.name}
+                key={tab.route}
                 style={styles.tab}
                 onPress={() => handleTabPress(tab.route, index)}
                 activeOpacity={0.7}
               >
                 <IconSymbol
                   name={tab.icon as any}
-                  size={28}
+                  size={26}
                   color={isActive ? colors.primary : colors.text}
                 />
                 <Text
@@ -170,12 +146,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    paddingVertical: 16,
-    paddingHorizontal: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
     backgroundColor: 'rgba(26, 26, 26, 0.95)',
     boxShadow: `0px 4px 16px ${colors.shadow}`,
     elevation: 10,
-    overflow: 'visible',
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -183,47 +159,21 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    gap: 6,
+    paddingVertical: 8,
+    gap: 4,
     zIndex: 2,
   },
   label: {
-    fontSize: 13,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-  centerLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.text,
-    marginTop: 4,
-    letterSpacing: 0.3,
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.2,
   },
   indicator: {
     position: 'absolute',
-    height: '75%',
+    height: '80%',
     backgroundColor: 'rgba(52, 152, 219, 0.15)',
     borderRadius: 20,
-    top: '12.5%',
+    top: '10%',
     zIndex: 1,
-  },
-  centerButtonContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 3,
-  },
-  centerButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: -32,
-    boxShadow: `0px 6px 16px ${colors.shadow}`,
-    elevation: 12,
-    borderWidth: 3,
-    borderColor: colors.background,
   },
 });

@@ -1,381 +1,332 @@
 
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { IconSymbol } from '@/components/IconSymbol';
 import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  FlatList,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
   Image,
-  Pressable,
-  Platform,
 } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
-import { colors } from '@/styles/commonStyles';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { IconSymbol } from '@/components/IconSymbol';
+import { colors, commonStyles } from '@/styles/commonStyles';
+import { useRouter } from 'expo-router';
 
-interface User {
+interface QuickAccessItem {
   id: string;
-  name: string;
-  avatar: string;
-  distance: number;
-  activities: string[];
-  followers: number;
-  posts: number;
-  bio: string;
+  title: string;
+  icon: string;
+  route: string;
+  color: string;
 }
 
-const mockUsers: User[] = [
+const quickAccessItems: QuickAccessItem[] = [
   {
     id: '1',
-    name: 'Alex Rivers',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop',
-    distance: 3.2,
-    activities: ['Fishing', 'Hiking'],
-    followers: 234,
-    posts: 45,
-    bio: 'Fly fishing enthusiast and trail explorer',
+    title: 'Spots',
+    icon: 'star.fill',
+    route: '/(tabs)/spots',
+    color: colors.accent,
   },
   {
     id: '2',
-    name: 'Maria Santos',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop',
-    distance: 5.8,
-    activities: ['Hunting', 'Camping'],
-    followers: 567,
-    posts: 89,
-    bio: 'Bow hunter and wilderness camper',
+    title: 'Regulations',
+    icon: 'doc.text.fill',
+    route: '/(tabs)/regulations',
+    color: colors.secondary,
   },
   {
     id: '3',
-    name: 'Tom Bradley',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop',
-    distance: 8.1,
-    activities: ['Hiking', 'Photography'],
-    followers: 892,
-    posts: 156,
-    bio: 'Capturing nature one trail at a time',
+    title: 'Gear',
+    icon: 'backpack.fill',
+    route: '/(tabs)/gear',
+    color: colors.highlight,
+  },
+  {
+    id: '4',
+    title: 'Saved',
+    icon: 'bookmark.fill',
+    route: '/(tabs)/saved',
+    color: colors.primary,
+  },
+];
+
+const nearbyUsers = [
+  {
+    id: '1',
+    name: 'John Tracker',
+    distance: '2.3 miles',
+    activity: 'Hunting',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
+  },
+  {
+    id: '2',
+    name: 'Sarah Rivers',
+    distance: '5.1 miles',
+    activity: 'Fishing',
+    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop',
+  },
+  {
+    id: '3',
+    name: 'Mike Trails',
+    distance: '8.7 miles',
+    activity: 'Hiking',
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop',
+  },
+  {
+    id: '4',
+    name: 'Emma Woods',
+    distance: '12.4 miles',
+    activity: 'Camping',
+    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop',
   },
 ];
 
 export default function ExploreScreen() {
   const router = useRouter();
-  const [followedUsers, setFollowedUsers] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
+  const [radiusFilter, setRadiusFilter] = useState(50);
 
-  const handleFollow = (userId: string) => {
-    setFollowedUsers((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(userId)) {
-        newSet.delete(userId);
-      } else {
-        newSet.add(userId);
-      }
-      return newSet;
-    });
+  const handleQuickAccess = (route: string) => {
+    console.log('Navigating to:', route);
+    router.push(route as any);
   };
 
-  const handleMapPress = () => {
-    router.push('/(tabs)/map');
-  };
-
-  const handleTrackMilesPress = () => {
-    router.push('/(tabs)/profile');
-  };
-
-  const handleMessagesPress = () => {
-    router.push('/(tabs)/messages');
-  };
-
-  const handleNotificationsPress = () => {
-    router.push('/(tabs)/notifications');
-  };
-
-  const renderHeaderRight = () => (
-    <View style={styles.headerButtonGroup}>
-      <Pressable style={styles.headerButton} onPress={handleMessagesPress}>
-        <IconSymbol name="message.fill" color={colors.primary} size={24} />
-      </Pressable>
-      <Pressable style={styles.headerButton} onPress={handleNotificationsPress}>
-        <IconSymbol name="bell.fill" color={colors.primary} size={24} />
-      </Pressable>
-    </View>
-  );
-
-  const renderHeaderLeft = () => (
-    <View style={styles.headerButtonGroup}>
-      <Pressable style={styles.headerButton} onPress={handleMapPress}>
-        <IconSymbol name="map.fill" color={colors.primary} size={24} />
-      </Pressable>
-      <Pressable style={styles.trackMilesButtonIOS} onPress={handleTrackMilesPress}>
-        <IconSymbol name="figure.run" color={colors.primary} size={20} />
-      </Pressable>
-    </View>
-  );
-
-  const renderUser = ({ item }: { item: User }) => {
-    const isFollowing = followedUsers.has(item.id);
-
-    return (
-      <View style={styles.userCard}>
-        <Image source={{ uri: item.avatar }} style={styles.avatar} />
-        <View style={styles.userInfo}>
-          <View style={styles.userHeader}>
-            <Text style={styles.userName}>{item.name}</Text>
-            <Text style={styles.distance}>{item.distance} mi away</Text>
-          </View>
-          <Text style={styles.bio} numberOfLines={2}>
-            {item.bio}
-          </Text>
-          <View style={styles.activities}>
-            {item.activities.map((activity, index) => (
-              <View key={index} style={styles.activityBadge}>
-                <Text style={styles.activityText}>{activity}</Text>
-              </View>
-            ))}
-          </View>
-          <View style={styles.stats}>
-            <View style={styles.stat}>
-              <Text style={styles.statValue}>{item.posts}</Text>
-              <Text style={styles.statLabel}>Posts</Text>
-            </View>
-            <View style={styles.stat}>
-              <Text style={styles.statValue}>{item.followers}</Text>
-              <Text style={styles.statLabel}>Followers</Text>
-            </View>
-          </View>
-        </View>
-        <Pressable
-          style={[styles.followButton, isFollowing && styles.followingButton]}
-          onPress={() => handleFollow(item.id)}
-        >
-          <Text style={[styles.followButtonText, isFollowing && styles.followingButtonText]}>
-            {isFollowing ? 'Following' : 'Follow'}
-          </Text>
-        </Pressable>
-      </View>
-    );
+  const handleUserPress = (userId: string) => {
+    console.log('Viewing user profile:', userId);
+    router.push('/(tabs)/user-profile' as any);
   };
 
   return (
-    <>
-      {Platform.OS === 'ios' && (
-        <Stack.Screen
-          options={{
-            title: 'Explore',
-            headerRight: renderHeaderRight,
-            headerLeft: renderHeaderLeft,
-            headerLargeTitle: false,
-          }}
-        />
-      )}
-      <View style={styles.container}>
-        {Platform.OS !== 'ios' && (
-          <View style={styles.topBar}>
-            <View style={styles.topLeft}>
-              <Pressable style={styles.topButton} onPress={handleMapPress}>
-                <IconSymbol name="map.fill" color={colors.text} size={24} />
-              </Pressable>
-              <Pressable style={styles.trackMilesButton} onPress={handleTrackMilesPress}>
-                <IconSymbol name="figure.run" color="#ffffff" size={20} />
-                <Text style={styles.trackMilesText}>Track Miles</Text>
-              </Pressable>
-            </View>
-            <View style={styles.topRight}>
-              <Pressable style={styles.topButton} onPress={handleMessagesPress}>
-                <IconSymbol name="message.fill" color={colors.text} size={24} />
-              </Pressable>
-              <Pressable style={styles.topButton} onPress={handleNotificationsPress}>
-                <IconSymbol name="bell.fill" color={colors.text} size={24} />
-              </Pressable>
-            </View>
-          </View>
-        )}
+    <SafeAreaView style={commonStyles.container} edges={['top']}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Discover Outdoorsmen</Text>
-          <Text style={styles.subtitle}>Connect with people near you</Text>
+          <Text style={commonStyles.title}>Explore</Text>
+          <Text style={commonStyles.textSecondary}>
+            Discover outdoorsmen and locations near you
+          </Text>
         </View>
-        <FlatList
-          data={mockUsers}
-          renderItem={renderUser}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={[
-            styles.listContent,
-            Platform.OS !== 'ios' && styles.listContentWithTabBar,
-          ]}
-          showsVerticalScrollIndicator={false}
-        />
-      </View>
-    </>
+
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <IconSymbol name="magnifyingglass" size={20} color={colors.textSecondary} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search users, locations..."
+            placeholderTextColor={colors.textSecondary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
+
+        {/* Quick Access Grid */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Quick Access</Text>
+          <View style={styles.quickAccessGrid}>
+            {quickAccessItems.map((item) => (
+              <TouchableOpacity
+                key={item.id}
+                style={styles.quickAccessCard}
+                onPress={() => handleQuickAccess(item.route)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.quickAccessIcon, { backgroundColor: item.color }]}>
+                  <IconSymbol name={item.icon as any} size={28} color="#ffffff" />
+                </View>
+                <Text style={styles.quickAccessTitle}>{item.title}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Radius Filter */}
+        <View style={styles.section}>
+          <View style={styles.filterHeader}>
+            <Text style={styles.sectionTitle}>Nearby Outdoorsmen</Text>
+            <TouchableOpacity style={styles.radiusButton}>
+              <IconSymbol name="location.fill" size={16} color={colors.primary} />
+              <Text style={styles.radiusText}>{radiusFilter} miles</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* User List */}
+          <View style={styles.userList}>
+            {nearbyUsers.map((user) => (
+              <TouchableOpacity
+                key={user.id}
+                style={styles.userCard}
+                onPress={() => handleUserPress(user.id)}
+                activeOpacity={0.7}
+              >
+                <Image source={{ uri: user.avatar }} style={styles.avatar} />
+                <View style={styles.userInfo}>
+                  <Text style={styles.userName}>{user.name}</Text>
+                  <View style={styles.userMeta}>
+                    <IconSymbol name="location.fill" size={12} color={colors.textSecondary} />
+                    <Text style={styles.userDistance}>{user.distance}</Text>
+                    <Text style={styles.userDivider}>•</Text>
+                    <Text style={styles.userActivity}>{user.activity}</Text>
+                  </View>
+                </View>
+                <TouchableOpacity style={styles.followButton}>
+                  <Text style={styles.followButtonText}>Follow</Text>
+                </TouchableOpacity>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Bottom Padding */}
+        <View style={styles.bottomPadding} />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scrollView: {
     flex: 1,
-    backgroundColor: colors.background,
-  },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 60,
-    paddingBottom: 12,
-    backgroundColor: colors.card,
-  },
-  topLeft: {
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'center',
-  },
-  topButton: {
-    padding: 8,
-  },
-  topRight: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  trackMilesButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.primary,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  trackMilesText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  trackMilesButtonIOS: {
-    padding: 4,
   },
   header: {
-    backgroundColor: colors.card,
-    padding: 16,
-    paddingTop: Platform.OS === 'ios' ? 16 : 12,
-    marginBottom: 12,
-    boxShadow: `0px 2px 4px ${colors.shadow}`,
-    elevation: 2,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  listContent: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 8,
     paddingBottom: 16,
   },
-  listContentWithTabBar: {
-    paddingBottom: 100,
-  },
-  userCard: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    boxShadow: `0px 2px 8px ${colors.shadow}`,
-    elevation: 3,
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    marginBottom: 12,
-    alignSelf: 'center',
-  },
-  userInfo: {
-    marginBottom: 12,
-  },
-  userHeader: {
+  searchContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    backgroundColor: colors.card,
+    marginHorizontal: 16,
+    marginBottom: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 12,
   },
-  userName: {
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: colors.text,
+  },
+  section: {
+    marginBottom: 32,
+    paddingHorizontal: 16,
+  },
+  sectionTitle: {
     fontSize: 20,
     fontWeight: '700',
     color: colors.text,
+    marginBottom: 16,
   },
-  distance: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  bio: {
-    fontSize: 14,
-    color: colors.text,
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  activities: {
+  quickAccessGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 12,
+    gap: 12,
   },
-  activityBadge: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  quickAccessCard: {
+    width: '48%',
+    backgroundColor: colors.card,
     borderRadius: 16,
-  },
-  activityText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  stats: {
-    flexDirection: 'row',
-    gap: 24,
-  },
-  stat: {
+    padding: 20,
     alignItems: 'center',
+    gap: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  statValue: {
-    fontSize: 18,
-    fontWeight: '700',
+  quickAccessIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickAccessTitle: {
+    fontSize: 15,
+    fontWeight: '600',
     color: colors.text,
   },
-  statLabel: {
-    fontSize: 12,
+  filterHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  radiusButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  radiusText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  userList: {
+    gap: 12,
+  },
+  userCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    padding: 12,
+    borderRadius: 12,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  avatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: colors.border,
+  },
+  userInfo: {
+    flex: 1,
+    gap: 4,
+  },
+  userName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  userMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  userDistance: {
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
+  userDivider: {
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
+  userActivity: {
+    fontSize: 13,
     color: colors.textSecondary,
   },
   followButton: {
     backgroundColor: colors.primary,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  followingButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
   },
   followButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
     color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '700',
   },
-  followingButtonText: {
-    color: colors.primary,
-  },
-  headerButton: {
-    padding: 4,
-  },
-  headerButtonGroup: {
-    flexDirection: 'row',
-    gap: 12,
-    marginRight: 8,
+  bottomPadding: {
+    height: 100,
   },
 });

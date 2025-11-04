@@ -32,7 +32,7 @@ export default function TabLayout() {
           name="explore"
           options={{
             title: 'Explore',
-            tabBarIcon: ({ color }) => <IconSymbol name="person.2.fill" color={color} />,
+            tabBarIcon: ({ color }) => <IconSymbol name="safari.fill" color={color} />,
           }}
         />
         <Tabs.Screen
@@ -43,20 +43,6 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="spots"
-          options={{
-            title: 'Spots',
-            tabBarIcon: ({ color }) => <IconSymbol name="star.fill" color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="regulations"
-          options={{
-            title: 'Regulations',
-            tabBarIcon: ({ color }) => <IconSymbol name="doc.text.fill" color={color} />,
-          }}
-        />
-        <Tabs.Screen
           name="weather"
           options={{
             title: 'Weather',
@@ -64,17 +50,29 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="gear"
-          options={{
-            title: 'Gear',
-            tabBarIcon: ({ color }) => <IconSymbol name="backpack.fill" color={color} />,
-          }}
-        />
-        <Tabs.Screen
           name="profile"
           options={{
             title: 'Profile',
             tabBarIcon: ({ color }) => <IconSymbol name="person.fill" color={color} />,
+          }}
+        />
+        {/* Hidden tabs - accessible via navigation */}
+        <Tabs.Screen
+          name="spots"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="regulations"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="gear"
+          options={{
+            href: null,
           }}
         />
         <Tabs.Screen
@@ -152,7 +150,7 @@ export default function TabLayout() {
               {
                 route: '/(tabs)/explore',
                 label: 'Explore',
-                icon: 'person.2.fill',
+                icon: 'safari.fill',
               },
               {
                 route: '/(tabs)/map',
@@ -160,24 +158,9 @@ export default function TabLayout() {
                 icon: 'map.fill',
               },
               {
-                route: '/(tabs)/spots',
-                label: 'Spots',
-                icon: 'star.fill',
-              },
-              {
-                route: '/(tabs)/regulations',
-                label: 'Rules',
-                icon: 'doc.text.fill',
-              },
-              {
                 route: '/(tabs)/weather',
                 label: 'Weather',
                 icon: 'cloud.sun.fill',
-              },
-              {
-                route: '/(tabs)/gear',
-                label: 'Gear',
-                icon: 'backpack.fill',
               },
               {
                 route: '/(tabs)/profile',
@@ -191,11 +174,27 @@ export default function TabLayout() {
         <Tabs.Screen name="(home)" />
         <Tabs.Screen name="explore" />
         <Tabs.Screen name="map" />
-        <Tabs.Screen name="spots" />
-        <Tabs.Screen name="regulations" />
         <Tabs.Screen name="weather" />
-        <Tabs.Screen name="gear" />
         <Tabs.Screen name="profile" />
+        {/* Hidden tabs - accessible via navigation */}
+        <Tabs.Screen
+          name="spots"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="regulations"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="gear"
+          options={{
+            href: null,
+          }}
+        />
         <Tabs.Screen
           name="messages"
           options={{
