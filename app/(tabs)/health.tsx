@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,7 @@ import { Stack, useRouter } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { HealthData, DailyGoals, WorkoutSession } from '@/types/Wearable';
-import * as Pedometer from 'expo-sensors/Pedometer';
+import { Pedometer } from 'expo-sensors';
 
 export default function HealthScreen() {
   const router = useRouter();
@@ -43,21 +43,7 @@ export default function HealthScreen() {
     }
   };
 
-  const subscribeToPedometer = () => {
-    const subscription = Pedometer.watchStepCount(result => {
-      setTodaySteps(result.steps);
-      updateHealthData(result.steps);
-    });
-
-    return () => subscription && subscription.remove();
-  };
-
-  useEffect(() => {
-    checkPedometerAvailability();
-    subscribeToPedometer();
-  }, [subscribeToPedometer]);
-
-  const updateHealthData = (steps: number) => {
+  const updateHealthData = useCallback((steps: number) => {
     // Rough calculations - in production, these would be more accurate
     const distance = (steps * 0.0005); // ~0.5 miles per 1000 steps
     const calories = Math.floor(steps * 0.04); // ~40 calories per 1000 steps
@@ -70,7 +56,22 @@ export default function HealthScreen() {
       activeMinutes,
       timestamp: new Date(),
     });
-  };
+  }, []);
+
+  const subscribeToPedometer = useCallback(() => {
+    const subscription = Pedometer.watchStepCount(result => {
+      setTodaySteps(result.steps);
+      updateHealthData(result.steps);
+    });
+
+    return () => subscription && subscription.remove();
+  }, [updateHealthData]);
+
+  useEffect(() => {
+    checkPedometerAvailability();
+    const cleanup = subscribeToPedometer();
+    return cleanup;
+  }, [subscribeToPedometer]);
 
   const handleMapPress = () => {
     router.push('/(tabs)/map');

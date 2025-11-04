@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -63,7 +63,7 @@ export default function FloatingTabBar({
     return pathname.includes(tabName || '');
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     animatedValue.value = withSpring(activeIndex >= 0 ? activeIndex : 0, {
       damping: 15,
       stiffness: 150,

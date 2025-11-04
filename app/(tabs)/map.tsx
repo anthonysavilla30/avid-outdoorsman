@@ -39,6 +39,18 @@ export default function MapScreen() {
     waterSources: false,
   });
 
+  const getCurrentLocation = useCallback(async () => {
+    try {
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+      setCurrentLocation(location);
+      console.log('Current location:', location);
+    } catch (error) {
+      console.error('Error getting current location:', error);
+    }
+  }, []);
+
   const requestLocationPermission = useCallback(async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -50,23 +62,11 @@ export default function MapScreen() {
     } catch (error) {
       console.error('Error requesting location permission:', error);
     }
-  }, []);
+  }, [getCurrentLocation]);
 
   useEffect(() => {
     requestLocationPermission();
   }, [requestLocationPermission]);
-
-  const getCurrentLocation = async () => {
-    try {
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
-      setCurrentLocation(location);
-      console.log('Current location:', location);
-    } catch (error) {
-      console.error('Error getting current location:', error);
-    }
-  };
 
   const handleAddLandmark = () => {
     if (!currentLocation) {
