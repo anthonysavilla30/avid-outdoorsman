@@ -107,6 +107,30 @@ export default function TabLayout() {
             href: null,
           }}
         />
+        <Tabs.Screen
+          name="settings"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="search"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="user-profile"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="saved"
+          options={{
+            href: null,
+          }}
+        />
       </Tabs>
     );
   }
@@ -198,6 +222,30 @@ export default function TabLayout() {
         />
         <Tabs.Screen
           name="spot-detail"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="settings"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="search"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="user-profile"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="saved"
           options={{
             href: null,
           }}

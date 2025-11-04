@@ -11,6 +11,14 @@ export default function HomeLayout() {
           title: 'Home'
         }}
       />
+      <Stack.Screen
+        name="post-detail"
+        options={{
+          headerShown: true,
+          title: 'Post',
+          presentation: 'card',
+        }}
+      />
     </Stack>
   );
 }

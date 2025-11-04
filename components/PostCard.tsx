@@ -4,19 +4,31 @@ import { View, Text, StyleSheet, Image, Pressable } from 'react-native';
 import { colors } from '@/styles/commonStyles';
 import { Post } from '@/types/Post';
 import { IconSymbol } from './IconSymbol';
+import { useRouter } from 'expo-router';
 
 interface PostCardProps {
   post: Post;
 }
 
 export default function PostCard({ post }: PostCardProps) {
+  const router = useRouter();
   const timeAgo = getTimeAgo(post.timestamp);
 
+  const handlePostPress = () => {
+    router.push(`/(tabs)/(home)/post-detail?id=${post.id}`);
+  };
+
+  const handleAuthorPress = () => {
+    router.push(`/(tabs)/user-profile?id=${post.author.name}`);
+  };
+
   return (
-    <View style={styles.card}>
+    <Pressable style={styles.card} onPress={handlePostPress}>
       {/* Header */}
       <View style={styles.header}>
-        <Image source={{ uri: post.author.avatar }} style={styles.avatar} />
+        <Pressable onPress={handleAuthorPress}>
+          <Image source={{ uri: post.author.avatar }} style={styles.avatar} />
+        </Pressable>
         <View style={styles.authorInfo}>
           <Text style={styles.authorName}>{post.author.name}</Text>
           <View style={styles.metaRow}>
@@ -92,7 +104,7 @@ export default function PostCard({ post }: PostCardProps) {
           <IconSymbol name="square.and.arrow.up" size={20} color={colors.text} />
         </Pressable>
       </View>
-    </View>
+    </Pressable>
   );
 }
 

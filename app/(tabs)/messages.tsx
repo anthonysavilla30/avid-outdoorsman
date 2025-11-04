@@ -87,8 +87,18 @@ export default function MessagesScreen() {
     router.push('/(tabs)/messages/compose');
   };
 
+  const handleMessagePress = (message: Message) => {
+    router.push({
+      pathname: '/(tabs)/messages/conversation',
+      params: {
+        name: message.user.name,
+        avatar: message.user.avatar,
+      },
+    });
+  };
+
   const renderMessage = ({ item }: { item: Message }) => (
-    <Pressable style={styles.messageCard}>
+    <Pressable style={styles.messageCard} onPress={() => handleMessagePress(item)}>
       <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
       <View style={styles.messageContent}>
         <View style={styles.messageHeader}>

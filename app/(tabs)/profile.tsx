@@ -83,8 +83,19 @@ export default function ProfileScreen() {
     router.push('/(tabs)/leaderboard');
   };
 
+  const handleViewSaved = () => {
+    router.push('/(tabs)/saved');
+  };
+
+  const handleSettingsPress = () => {
+    router.push('/(tabs)/settings');
+  };
+
   const renderHeaderRight = () => (
     <View style={styles.headerButtonGroup}>
+      <Pressable style={styles.headerButton} onPress={handleSettingsPress}>
+        <IconSymbol name="gearshape.fill" color={colors.primary} size={24} />
+      </Pressable>
       <Pressable style={styles.headerButton} onPress={handleMessagesPress}>
         <IconSymbol name="message.fill" color={colors.primary} size={24} />
       </Pressable>

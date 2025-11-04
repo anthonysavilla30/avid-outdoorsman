@@ -63,6 +63,10 @@ export default function HomeScreen() {
     router.push('/(tabs)/notifications');
   };
 
+  const handleSearchPress = () => {
+    router.push('/(tabs)/search');
+  };
+
   const radiusOptions: { value: RadiusFilter; label: string }[] = [
     { value: 'all', label: 'All Posts' },
     { value: '5-10', label: '5-10 miles' },
@@ -85,6 +89,9 @@ export default function HomeScreen() {
             </Pressable>
           </View>
           <View style={styles.topRight}>
+            <Pressable style={styles.topButton} onPress={handleSearchPress}>
+              <IconSymbol name="magnifyingglass" color={colors.text} size={24} />
+            </Pressable>
             <Pressable style={styles.topButton} onPress={handleMessagesPress}>
               <IconSymbol name="message.fill" color={colors.text} size={24} />
             </Pressable>
@@ -156,6 +163,9 @@ export default function HomeScreen() {
 
   const renderHeaderRight = () => (
     <View style={styles.headerButtonGroup}>
+      <Pressable style={styles.headerButton} onPress={handleSearchPress}>
+        <IconSymbol name="magnifyingglass" color={colors.primary} size={24} />
+      </Pressable>
       <Pressable style={styles.headerButton} onPress={handleMessagesPress}>
         <IconSymbol name="message.fill" color={colors.primary} size={24} />
       </Pressable>

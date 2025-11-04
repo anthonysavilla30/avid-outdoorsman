@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,8 +8,9 @@ import {
   Image,
   Pressable,
   Platform,
+  ScrollView,
 } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 
@@ -126,8 +127,28 @@ function getNotificationColor(type: string): string {
 }
 
 export default function NotificationsScreen() {
+  const router = useRouter();
+  const [filter, setFilter] = useState<'all' | 'like' | 'comment' | 'follow' | 'mention'>('all');
+
+  const filteredNotifications = filter === 'all' 
+    ? mockNotifications 
+    : mockNotifications.filter(n => n.type === filter);
+
+  const handleNotificationPress = (notification: Notification) => {
+    console.log('Notification pressed:', notification);
+    // Navigate based on notification type
+    if (notification.type === 'follow') {
+      router.push(`/(tabs)/user-profile?id=${notification.user.name}`);
+    } else if (notification.type === 'like' || notification.type === 'comment') {
+      router.push('/(tabs)/(home)/post-detail?id=1');
+    }
+  };
+
   const renderNotification = ({ item }: { item: Notification }) => (
-    <Pressable style={[styles.notificationCard, !item.read && styles.unreadCard]}>
+    <Pressable 
+      style={[styles.notificationCard, !item.read && styles.unreadCard]}
+      onPress={() => handleNotificationPress(item)}
+    >
       <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
       <View style={styles.notificationContent}>
         <View style={styles.notificationHeader}>
@@ -152,8 +173,27 @@ export default function NotificationsScreen() {
         }}
       />
       <View style={styles.container}>
+        {/* Filter Tabs */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterContainer}
+        >
+          {(['all', 'like', 'comment', 'follow', 'mention'] as const).map((type) => (
+            <Pressable
+              key={type}
+              style={[styles.filterButton, filter === type && styles.filterButtonActive]}
+              onPress={() => setFilter(type)}
+            >
+              <Text style={[styles.filterText, filter === type && styles.filterTextActive]}>
+                {type.charAt(0).toUpperCase() + type.slice(1)}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+
         <FlatList
-          data={mockNotifications}
+          data={filteredNotifications}
           renderItem={renderNotification}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
@@ -183,7 +223,36 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   unreadCard: {
-    backgroundColor: '#e8f4f8',
+    borderLeftWidth: 3,
+    borderLeftColor: colors.primary,
+  },
+  filterContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
+    backgroundColor: colors.card,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  filterButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  filterButtonActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  filterText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  filterTextActive: {
+    color: '#ffffff',
   },
   avatar: {
     width: 50,
