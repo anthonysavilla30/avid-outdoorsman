@@ -1,11 +1,12 @@
+
 import "react-native-reanimated";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useFonts } from "expo-font";
 import { Stack, router } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { SystemBars } from "react-native-edge-to-edge";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { useColorScheme, Alert } from "react-native";
+import { useColorScheme, Alert, View, Text, ActivityIndicator, StyleSheet } from "react-native";
 import { useNetworkState } from "expo-network";
 import {
   DarkTheme,
@@ -31,11 +32,32 @@ export default function RootLayout() {
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
+  const [appReady, setAppReady] = useState(false);
 
   useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
+    const initializeApp = async () => {
+      try {
+        console.log('🚀 Initializing Avid Outdoorsman app...');
+        
+        // Wait for fonts to load
+        if (loaded) {
+          console.log('✅ Fonts loaded successfully');
+          
+          // Small delay to ensure everything is ready
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          setAppReady(true);
+          await SplashScreen.hideAsync();
+          console.log('✅ App initialization complete');
+        }
+      } catch (error) {
+        console.error('❌ Error during app initialization:', error);
+        setAppReady(true); // Still set ready to avoid infinite loading
+        await SplashScreen.hideAsync();
+      }
+    };
+
+    initializeApp();
   }, [loaded]);
 
   React.useEffect(() => {
@@ -50,8 +72,13 @@ export default function RootLayout() {
     }
   }, [networkState.isConnected, networkState.isInternetReachable]);
 
-  if (!loaded) {
-    return null;
+  if (!loaded || !appReady) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#4CAF50" />
+        <Text style={styles.loadingText}>Loading Avid Outdoorsman...</Text>
+      </View>
+    );
   }
 
   const CustomDefaultTheme: Theme = {
@@ -78,6 +105,7 @@ export default function RootLayout() {
       notification: "rgb(255, 69, 58)", // System Red (Dark Mode)
     },
   };
+
   return (
     <>
       <StatusBar style="auto" animated />
@@ -125,3 +153,18 @@ export default function RootLayout() {
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#1a1a1a',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#ffffff',
+    fontWeight: '500',
+  },
+});
