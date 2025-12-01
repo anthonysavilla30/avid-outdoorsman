@@ -18,9 +18,13 @@ import * as ImagePicker from 'expo-image-picker';
 import { colors } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { ActivityType } from '@/types/Post';
+import { usePosts } from '@/hooks/usePosts';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function CreatePostScreen() {
   const router = useRouter();
+  const { createPost } = usePosts();
+  const { user, isConfigured } = useAuth();
   const [content, setContent] = useState('');
   const [selectedActivity, setSelectedActivity] = useState<ActivityType>('fishing');
   const [location, setLocation] = useState('');
@@ -29,6 +33,7 @@ export default function CreatePostScreen() {
   const [weather, setWeather] = useState('');
   const [difficulty, setDifficulty] = useState<'easy' | 'moderate' | 'hard'>('moderate');
   const [showActivityDropdown, setShowActivityDropdown] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const activities: { type: ActivityType; icon: string; label: string }[] = [
     { type: 'hunting', icon: 'scope', label: 'Hunting' },
@@ -95,7 +100,7 @@ export default function CreatePostScreen() {
     setSelectedImages(selectedImages.filter((_, i) => i !== index));
   };
 
-  const handlePost = () => {
+  const handlePost = async () => {
     if (!content.trim()) {
       Alert.alert('Content required', 'Please add some content to your post.');
       return;
@@ -106,20 +111,52 @@ export default function CreatePostScreen() {
       return;
     }
 
-    // Here you would normally save the post to your backend
-    console.log('Creating post:', {
-      content,
-      activity: selectedActivity,
-      location,
-      tags: tags.split(',').map(t => t.trim()).filter(t => t),
-      images: selectedImages,
-      weather,
-      difficulty,
-    });
+    setIsSubmitting(true);
 
-    Alert.alert('Success', 'Your post has been created!', [
-      { text: 'OK', onPress: () => router.back() }
-    ]);
+    try {
+      // Create the post using the usePosts hook
+      const { data, error } = await createPost({
+        activity: selectedActivity,
+        location: location.trim(),
+        content: content.trim(),
+        images: selectedImages,
+        tags: tags.split(',').map(t => t.trim()).filter(t => t),
+        conditions: {
+          weather: weather.trim() || undefined,
+          difficulty,
+        },
+        author: {
+          name: user?.name || 'Anonymous',
+          avatar: user?.avatar || '',
+          distance: 0,
+        },
+      });
+
+      if (error) {
+        console.error('Error creating post:', error);
+        Alert.alert(
+          'Error',
+          isConfigured 
+            ? 'Failed to create post. Please try again.'
+            : 'Post created locally. Enable Supabase to save to backend.',
+          [{ text: 'OK' }]
+        );
+      } else {
+        console.log('Post created successfully:', data);
+        Alert.alert(
+          'Success',
+          isConfigured 
+            ? 'Your post has been published!'
+            : 'Post created! Enable Supabase to share with others.',
+          [{ text: 'OK', onPress: () => router.back() }]
+        );
+      }
+    } catch (error) {
+      console.error('Unexpected error creating post:', error);
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -133,8 +170,14 @@ export default function CreatePostScreen() {
             </Pressable>
           ),
           headerRight: () => (
-            <Pressable onPress={handlePost} style={styles.headerButton}>
-              <Text style={styles.postText}>Post</Text>
+            <Pressable 
+              onPress={handlePost} 
+              style={styles.headerButton}
+              disabled={isSubmitting}
+            >
+              <Text style={[styles.postText, isSubmitting && styles.postTextDisabled]}>
+                {isSubmitting ? 'Posting...' : 'Post'}
+              </Text>
             </Pressable>
           ),
         }}
@@ -367,6 +410,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: colors.primary,
+  },
+  postTextDisabled: {
+    opacity: 0.5,
   },
   section: {
     marginBottom: 24,
