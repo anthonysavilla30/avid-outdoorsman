@@ -1,1306 +1,821 @@
 
-import { View, Text, StyleSheet, ScrollView, Platform, Pressable, Alert, TextInput, Modal } from 'react-native';
-import { mockLandmarks } from '@/data/mockLandmarks';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, commonStyles } from '@/styles/commonStyles';
-import { Stack, useRouter } from 'expo-router';
-import React, { useState, useEffect, useCallback } from 'react';
-import LandmarkModal from '@/components/LandmarkModal';
-import { IconSymbol } from '@/components/IconSymbol';
-import { Landmark } from '@/types/Landmark';
-import MapFeatureCard from '@/components/MapFeatureCard';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Pressable, Alert, Platform, ScrollView, TextInput, Modal } from 'react-native';
+import MapView, { Marker, PROVIDER_GOOGLE, Region, Circle, Callout } from 'react-native-maps';
 import * as Location from 'expo-location';
-import {
-  mockSkiResorts,
-  mockNationalForests,
-  mockStateForests,
-  mockCampgrounds,
-  mockWildlifeManagementAreas,
+import { IconSymbol } from '@/components/IconSymbol';
+import { Stack, useRouter } from 'expo-router';
+import { colors } from '@/styles/commonStyles';
+import { 
+  mockSkiResorts, 
+  mockNationalForests, 
+  mockStateForests, 
+  mockCampgrounds, 
+  mockWildlifeManagementAreas 
 } from '@/data/mockMapFeatures';
+import { SkiResort, Forest, Campground, WildlifeManagementArea } from '@/types/MapFeature';
 
-type FilterType = 'all' | 'ski-resorts' | 'forests' | 'campgrounds' | 'wildlife' | 'landmarks';
-type MapViewType = 'standard' | 'satellite' | 'hybrid';
+interface MapMarker {
+  id: string;
+  title: string;
+  type: 'ski-resort' | 'forest' | 'campground' | 'wildlife-area';
+  coordinate: { latitude: number; longitude: number };
+  description: string;
+  data: SkiResort | Forest | Campground | WildlifeManagementArea;
+}
+
+type FilterType = 'all' | 'ski-resort' | 'forest' | 'campground' | 'wildlife-area';
 
 export default function MapScreen() {
   const router = useRouter();
-  const [landmarks, setLandmarks] = useState<Landmark[]>(mockLandmarks);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
-  const [mapViewType, setMapViewType] = useState<MapViewType>('standard');
+  const mapRef = useRef<MapView>(null);
+  const [location, setLocation] = useState<Location.LocationObject | null>(null);
+  const [mapType, setMapType] = useState<'standard' | 'satellite' | 'hybrid'>('standard');
+  const [selectedMarker, setSelectedMarker] = useState<MapMarker | null>(null);
+  const [markers, setMarkers] = useState<MapMarker[]>([]);
+  const [filter, setFilter] = useState<FilterType>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [showLayersModal, setShowLayersModal] = useState(false);
-  const [currentLocation, setCurrentLocation] = useState<Location.LocationObject | null>(null);
-  const [hasLocationPermission, setHasLocationPermission] = useState(false);
-  const [enabledLayers, setEnabledLayers] = useState({
-    contourLines: false,
-    blmBoundaries: false,
-    propertyLines: false,
-    trails: true,
-    waterSources: false,
-  });
+  const [showSearch, setShowSearch] = useState(false);
+  const [userRadius, setUserRadius] = useState<number>(50); // miles
 
-  const getCurrentLocation = useCallback(async () => {
-    try {
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
-      setCurrentLocation(location);
-      console.log('Current location:', location);
-    } catch (error) {
-      console.error('Error getting current location:', error);
-    }
+  useEffect(() => {
+    requestLocationPermission();
+    loadMarkers();
   }, []);
 
-  const requestLocationPermission = useCallback(async () => {
+  const requestLocationPermission = async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      setHasLocationPermission(status === 'granted');
-      
       if (status === 'granted') {
-        getCurrentLocation();
+        const loc = await Location.getCurrentPositionAsync({});
+        setLocation(loc);
+        console.log('User location obtained:', loc.coords);
+      } else {
+        console.log('Location permission denied');
+        Alert.alert('Location Permission', 'Please enable location services to see your position on the map.');
       }
     } catch (error) {
       console.error('Error requesting location permission:', error);
     }
-  }, [getCurrentLocation]);
-
-  useEffect(() => {
-    requestLocationPermission();
-  }, [requestLocationPermission]);
-
-  const handleAddLandmark = () => {
-    if (!currentLocation) {
-      Alert.alert('Location Required', 'Please enable location services to add a landmark.');
-      return;
-    }
-    setIsModalVisible(true);
   };
 
-  const handleSaveLandmark = (landmarkData: {
-    title: string;
-    description: string;
-    visibility: any;
-    category: string;
-  }) => {
-    const newLandmark: Landmark = {
-      id: Date.now().toString(),
-      ...landmarkData,
-      latitude: currentLocation?.coords.latitude || 39.7392,
-      longitude: currentLocation?.coords.longitude || -104.9903,
-      createdBy: {
-        id: 'current-user',
-        name: 'Current User',
-      },
-      createdAt: new Date(),
-    };
-
-    setLandmarks([...landmarks, newLandmark]);
-    setIsModalVisible(false);
-    Alert.alert('Success', 'Landmark added successfully!');
+  const loadMarkers = () => {
+    const allMarkers: MapMarker[] = [
+      ...mockSkiResorts.map(resort => ({
+        id: resort.id,
+        title: resort.name,
+        type: 'ski-resort' as const,
+        coordinate: resort.coordinates,
+        description: resort.description,
+        data: resort,
+      })),
+      ...mockNationalForests.map(forest => ({
+        id: forest.id,
+        title: forest.name,
+        type: 'forest' as const,
+        coordinate: forest.coordinates,
+        description: forest.description,
+        data: forest,
+      })),
+      ...mockStateForests.map(forest => ({
+        id: forest.id,
+        title: forest.name,
+        type: 'forest' as const,
+        coordinate: forest.coordinates,
+        description: forest.description,
+        data: forest,
+      })),
+      ...mockCampgrounds.map(camp => ({
+        id: camp.id,
+        title: camp.name,
+        type: 'campground' as const,
+        coordinate: camp.coordinates,
+        description: camp.description,
+        data: camp,
+      })),
+      ...mockWildlifeManagementAreas.map(wma => ({
+        id: wma.id,
+        title: wma.name,
+        type: 'wildlife-area' as const,
+        coordinate: wma.coordinates,
+        description: wma.description,
+        data: wma,
+      })),
+    ];
+    setMarkers(allMarkers);
+    console.log(`Loaded ${allMarkers.length} markers`);
   };
 
-  const toggleLayer = (layer: keyof typeof enabledLayers) => {
-    setEnabledLayers(prev => ({
-      ...prev,
-      [layer]: !prev[layer],
-    }));
-  };
-
-  const handleSearch = () => {
-    if (searchQuery.trim()) {
-      Alert.alert('Search', `Searching for: ${searchQuery}`);
-      console.log('Searching for location:', searchQuery);
-    }
-  };
-
-  const getLandmarkIcon = (category: string) => {
-    switch (category) {
-      case 'fishing-spot':
-        return 'fish.fill';
-      case 'hunting-area':
-        return 'scope';
-      case 'camping':
-        return 'tent.fill';
-      case 'trail':
-        return 'figure.hiking';
-      case 'viewpoint':
-        return 'eye.fill';
-      default:
-        return 'mappin.circle.fill';
+  const centerOnUser = () => {
+    if (location && mapRef.current) {
+      mapRef.current.animateToRegion({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        latitudeDelta: 0.5,
+        longitudeDelta: 0.5,
+      }, 1000);
+      console.log('Centered map on user location');
+    } else {
+      Alert.alert('Location Unavailable', 'Unable to get your current location.');
     }
   };
 
-  const getVisibilityIcon = (visibility: string) => {
-    switch (visibility) {
-      case 'public':
-        return 'globe';
-      case 'followers':
-        return 'person.2.fill';
-      case 'only-me':
-        return 'lock.fill';
-      default:
-        return 'lock.fill';
+  const toggleMapType = () => {
+    const types: Array<'standard' | 'satellite' | 'hybrid'> = ['standard', 'satellite', 'hybrid'];
+    const currentIndex = types.indexOf(mapType);
+    const nextType = types[(currentIndex + 1) % types.length];
+    setMapType(nextType);
+    console.log('Map type changed to:', nextType);
+  };
+
+  const zoomIn = () => {
+    if (mapRef.current) {
+      mapRef.current.getCamera().then(camera => {
+        if (camera.zoom) {
+          mapRef.current?.animateCamera({ zoom: camera.zoom + 1 }, { duration: 300 });
+        }
+      });
     }
   };
 
-  const handleMapPress = () => {
-    router.push('/(tabs)/map');
+  const zoomOut = () => {
+    if (mapRef.current) {
+      mapRef.current.getCamera().then(camera => {
+        if (camera.zoom) {
+          mapRef.current?.animateCamera({ zoom: camera.zoom - 1 }, { duration: 300 });
+        }
+      });
+    }
   };
 
-  const handleTrackMilesPress = () => {
-    router.push('/(tabs)/activity-tracker');
+  const getMarkerColor = (type: string) => {
+    switch(type) {
+      case 'ski-resort': return '#2196F3';
+      case 'forest': return '#4CAF50';
+      case 'campground': return '#FF9800';
+      case 'wildlife-area': return '#795548';
+      default: return '#9E9E9E';
+    }
   };
 
-  const handleMessagesPress = () => {
-    router.push('/(tabs)/messages');
+  const getMarkerIcon = (type: string) => {
+    switch(type) {
+      case 'ski-resort': return 'downhill-skiing';
+      case 'forest': return 'park';
+      case 'campground': return 'camping';
+      case 'wildlife-area': return 'pets';
+      default: return 'place';
+    }
   };
 
-  const handleNotificationsPress = () => {
-    router.push('/(tabs)/notifications');
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 3959; // Earth's radius in miles
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
   };
 
-  const renderHeaderRight = () => (
-    <View style={styles.headerButtonGroup}>
-      <Pressable style={styles.headerButton} onPress={handleMessagesPress}>
-        <IconSymbol name="message.fill" color={colors.primary} size={24} />
-      </Pressable>
-      <Pressable style={styles.headerButton} onPress={handleNotificationsPress}>
-        <IconSymbol name="bell.fill" color={colors.primary} size={24} />
-      </Pressable>
-    </View>
-  );
+  const getDistanceFromUser = (marker: MapMarker): string => {
+    if (!location) return '';
+    const distance = calculateDistance(
+      location.coords.latitude,
+      location.coords.longitude,
+      marker.coordinate.latitude,
+      marker.coordinate.longitude
+    );
+    return `${distance.toFixed(1)} mi away`;
+  };
 
-  const renderHeaderLeft = () => (
-    <View style={styles.headerButtonGroup}>
-      <Pressable style={styles.headerButton} onPress={handleMapPress}>
-        <IconSymbol name="map.fill" color={colors.primary} size={24} />
-      </Pressable>
-      <Pressable style={styles.trackMilesButtonIOS} onPress={handleTrackMilesPress}>
-        <IconSymbol name="figure.run" color={colors.primary} size={20} />
-      </Pressable>
-    </View>
-  );
+  const filteredMarkers = markers.filter(marker => {
+    const matchesFilter = filter === 'all' || marker.type === filter;
+    const matchesSearch = searchQuery === '' || 
+      marker.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      marker.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesFilter && matchesSearch;
+  });
 
-  const filters: { type: FilterType; label: string; icon: string; count: number }[] = [
-    { type: 'all', label: 'All', icon: 'map.fill', count: mockSkiResorts.length + mockNationalForests.length + mockStateForests.length + mockCampgrounds.length + mockWildlifeManagementAreas.length + landmarks.length },
-    { type: 'ski-resorts', label: 'Ski Resorts', icon: 'snowflake', count: mockSkiResorts.length },
-    { type: 'forests', label: 'Forests', icon: 'tree.fill', count: mockNationalForests.length + mockStateForests.length },
-    { type: 'campgrounds', label: 'Campgrounds', icon: 'tent.fill', count: mockCampgrounds.length },
-    { type: 'wildlife', label: 'Wildlife Areas', icon: 'pawprint.fill', count: mockWildlifeManagementAreas.length },
-    { type: 'landmarks', label: 'My Landmarks', icon: 'mappin.circle.fill', count: landmarks.length },
-  ];
+  const handleMarkerPress = (marker: MapMarker) => {
+    setSelectedMarker(marker);
+    console.log('Marker selected:', marker.title);
+  };
 
-  const shouldShowSkiResorts = activeFilter === 'all' || activeFilter === 'ski-resorts';
-  const shouldShowForests = activeFilter === 'all' || activeFilter === 'forests';
-  const shouldShowCampgrounds = activeFilter === 'all' || activeFilter === 'campgrounds';
-  const shouldShowWildlife = activeFilter === 'all' || activeFilter === 'wildlife';
-  const shouldShowLandmarks = activeFilter === 'all' || activeFilter === 'landmarks';
+  const handleGetDirections = () => {
+    if (selectedMarker) {
+      const { latitude, longitude } = selectedMarker.coordinate;
+      const url = Platform.select({
+        ios: `maps://app?daddr=${latitude},${longitude}`,
+        android: `google.navigation:q=${latitude},${longitude}`,
+        default: `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`,
+      });
+      Alert.alert('Directions', `Opening directions to ${selectedMarker.title}...`);
+      console.log('Opening directions URL:', url);
+    }
+  };
 
-  const mapViewOptions: { type: MapViewType; label: string; icon: string }[] = [
-    { type: 'standard', label: 'Standard', icon: 'map' },
-    { type: 'satellite', label: 'Satellite', icon: 'globe.americas.fill' },
-    { type: 'hybrid', label: 'Hybrid', icon: 'square.stack.3d.up.fill' },
-  ];
+  const renderMarkerDetails = () => {
+    if (!selectedMarker) return null;
 
-  const layerOptions = [
-    { key: 'contourLines' as const, label: 'Contour Lines', icon: 'chart.line.uptrend.xyaxis', description: 'Topographic elevation lines' },
-    { key: 'blmBoundaries' as const, label: 'BLM Boundaries', icon: 'square.dashed', description: 'Bureau of Land Management areas' },
-    { key: 'propertyLines' as const, label: 'Property Lines', icon: 'square.split.2x2', description: 'Private property boundaries' },
-    { key: 'trails' as const, label: 'Trail Overlays', icon: 'figure.hiking', description: 'Hiking and biking trails' },
-    { key: 'waterSources' as const, label: 'Water Sources', icon: 'drop.fill', description: 'Rivers, lakes, and streams' },
-  ];
-
-  return (
-    <>
-      {Platform.OS === 'ios' && (
-        <Stack.Screen
-          options={{
-            title: 'Map',
-            headerRight: renderHeaderRight,
-            headerLeft: renderHeaderLeft,
-            headerLargeTitle: false,
-          }}
-        />
-      )}
-      <View style={styles.container}>
-        <ScrollView
-          contentContainerStyle={[
-            styles.content,
-            Platform.OS !== 'ios' && styles.contentWithTabBar,
-          ]}
-        >
-          {Platform.OS !== 'ios' && (
-            <View style={styles.topBar}>
-              <View style={styles.topLeft}>
-                <Pressable style={styles.topButton} onPress={handleMapPress}>
-                  <IconSymbol name="map.fill" color={colors.text} size={24} />
-                </Pressable>
-                <Pressable style={styles.trackMilesButton} onPress={handleTrackMilesPress}>
-                  <IconSymbol name="figure.run" color="#ffffff" size={20} />
-                  <Text style={styles.trackMilesText}>Track Activity</Text>
-                </Pressable>
-              </View>
-              <View style={styles.topRight}>
-                <Pressable style={styles.topButton} onPress={handleMessagesPress}>
-                  <IconSymbol name="message.fill" color={colors.text} size={24} />
-                </Pressable>
-                <Pressable style={styles.topButton} onPress={handleNotificationsPress}>
-                  <IconSymbol name="bell.fill" color={colors.text} size={24} />
-                </Pressable>
-              </View>
-            </View>
-          )}
-
-          <View style={styles.header}>
-            <Text style={styles.title}>Outdoor Recreation Map</Text>
-            <Text style={styles.subtitle}>
-              Note: react-native-maps is not currently supported in Natively. 
-              This is a comprehensive list of outdoor recreation areas.
-            </Text>
-          </View>
-
-          {/* Current Location Display */}
-          {hasLocationPermission && currentLocation && (
-            <View style={styles.locationCard}>
-              <View style={styles.locationHeader}>
-                <IconSymbol name="location.fill" size={24} color={colors.primary} />
-                <Text style={styles.locationTitle}>Your Location</Text>
-                <Pressable onPress={getCurrentLocation} style={styles.refreshButton}>
-                  <IconSymbol name="arrow.clockwise" size={20} color={colors.primary} />
-                </Pressable>
-              </View>
-              <Text style={styles.locationCoords}>
-                {currentLocation.coords.latitude.toFixed(6)}, {currentLocation.coords.longitude.toFixed(6)}
-              </Text>
-              <View style={styles.locationStats}>
-                <View style={styles.locationStat}>
-                  <Text style={styles.locationStatLabel}>Accuracy</Text>
-                  <Text style={styles.locationStatValue}>
-                    {currentLocation.coords.accuracy?.toFixed(0) || 'N/A'}m
-                  </Text>
-                </View>
-                {currentLocation.coords.altitude && (
-                  <View style={styles.locationStat}>
-                    <Text style={styles.locationStatLabel}>Altitude</Text>
-                    <Text style={styles.locationStatValue}>
-                      {(currentLocation.coords.altitude * 3.28084).toFixed(0)}ft
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </View>
-          )}
-
-          {!hasLocationPermission && (
-            <View style={styles.permissionCard}>
-              <IconSymbol name="location.slash.fill" size={32} color={colors.error} />
-              <Text style={styles.permissionTitle}>Location Permission Required</Text>
-              <Text style={styles.permissionText}>
-                Enable location services to see your current position and add landmarks
-              </Text>
-              <Pressable style={styles.permissionButton} onPress={requestLocationPermission}>
-                <Text style={styles.permissionButtonText}>Enable Location</Text>
-              </Pressable>
-            </View>
-          )}
-
-          {/* Location Search */}
-          <View style={styles.searchContainer}>
-            <View style={styles.searchInputContainer}>
-              <IconSymbol name="magnifyingglass" size={20} color={colors.textSecondary} />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search location..."
-                placeholderTextColor={colors.textSecondary}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                onSubmitEditing={handleSearch}
-                returnKeyType="search"
+    const data = selectedMarker.data;
+    
+    return (
+      <View style={styles.bottomSheet}>
+        <View style={styles.bottomSheetHeader}>
+          <View style={styles.bottomSheetHandle} />
+        </View>
+        
+        <ScrollView style={styles.bottomSheetContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.markerTypeContainer}>
+            <View style={[styles.markerTypeBadge, { backgroundColor: getMarkerColor(selectedMarker.type) }]}>
+              <IconSymbol 
+                ios_icon_name="mappin.circle.fill" 
+                android_material_icon_name={getMarkerIcon(selectedMarker.type)} 
+                size={16} 
+                color="#fff" 
               />
-              {searchQuery.length > 0 && (
-                <Pressable onPress={() => setSearchQuery('')}>
-                  <IconSymbol name="xmark.circle.fill" size={20} color={colors.textSecondary} />
-                </Pressable>
-              )}
-            </View>
-            <Pressable style={styles.searchButton} onPress={handleSearch}>
-              <IconSymbol name="arrow.right.circle.fill" size={24} color="#ffffff" />
-            </Pressable>
-          </View>
-
-          {/* Map View Controls */}
-          <View style={styles.mapControlsRow}>
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false}
-              style={styles.mapViewSelector}
-              contentContainerStyle={styles.mapViewContent}
-            >
-              {mapViewOptions.map((option) => (
-                <Pressable
-                  key={option.type}
-                  style={[
-                    styles.mapViewButton,
-                    mapViewType === option.type && styles.mapViewButtonActive,
-                  ]}
-                  onPress={() => setMapViewType(option.type)}
-                >
-                  <IconSymbol
-                    name={option.icon as any}
-                    size={20}
-                    color={mapViewType === option.type ? '#ffffff' : colors.text}
-                  />
-                  <Text
-                    style={[
-                      styles.mapViewText,
-                      mapViewType === option.type && styles.mapViewTextActive,
-                    ]}
-                  >
-                    {option.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-            <Pressable 
-              style={styles.layersButton}
-              onPress={() => setShowLayersModal(true)}
-            >
-              <IconSymbol name="square.stack.3d.up.fill" size={20} color="#ffffff" />
-              <Text style={styles.layersButtonText}>Layers</Text>
-            </Pressable>
-          </View>
-
-          {/* Active Layers Indicator */}
-          {Object.values(enabledLayers).some(v => v) && (
-            <View style={styles.activeLayersContainer}>
-              <Text style={styles.activeLayersLabel}>Active Layers:</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={styles.activeLayersList}>
-                  {Object.entries(enabledLayers).map(([key, enabled]) => {
-                    if (!enabled) return null;
-                    const layer = layerOptions.find(l => l.key === key);
-                    if (!layer) return null;
-                    return (
-                      <View key={key} style={styles.activeLayerChip}>
-                        <IconSymbol name={layer.icon as any} size={14} color={colors.primary} />
-                        <Text style={styles.activeLayerText}>{layer.label}</Text>
-                      </View>
-                    );
-                  })}
-                </View>
-              </ScrollView>
-            </View>
-          )}
-
-          <View style={styles.mapPlaceholder}>
-            <IconSymbol 
-              name={mapViewType === 'satellite' ? 'globe.americas.fill' : 'map.fill'} 
-              size={64} 
-              color={colors.textSecondary} 
-            />
-            <Text style={styles.placeholderText}>
-              {mapViewType === 'satellite' ? 'Satellite View' : 
-               mapViewType === 'hybrid' ? 'Hybrid View' : 'Standard Map View'}
-            </Text>
-            <Text style={styles.placeholderSubtext}>
-              Interactive map with location tracking and custom layers
-            </Text>
-            {currentLocation && (
-              <Text style={styles.placeholderLocation}>
-                📍 {currentLocation.coords.latitude.toFixed(4)}, {currentLocation.coords.longitude.toFixed(4)}
+              <Text style={styles.markerTypeText}>
+                {selectedMarker.type.replace('-', ' ').toUpperCase()}
               </Text>
+            </View>
+            {location && (
+              <Text style={styles.distanceText}>{getDistanceFromUser(selectedMarker)}</Text>
             )}
           </View>
 
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            style={styles.filterContainer}
-            contentContainerStyle={styles.filterContent}
-          >
-            {filters.map((filter) => (
-              <Pressable
-                key={filter.type}
-                style={[
-                  styles.filterButton,
-                  activeFilter === filter.type && styles.filterButtonActive,
-                ]}
-                onPress={() => setActiveFilter(filter.type)}
-              >
-                <IconSymbol
-                  name={filter.icon as any}
-                  size={18}
-                  color={activeFilter === filter.type ? '#ffffff' : colors.text}
-                />
-                <Text
-                  style={[
-                    styles.filterButtonText,
-                    activeFilter === filter.type && styles.filterButtonTextActive,
-                  ]}
-                >
-                  {filter.label}
-                </Text>
-                <View
-                  style={[
-                    styles.filterBadge,
-                    activeFilter === filter.type && styles.filterBadgeActive,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.filterBadgeText,
-                      activeFilter === filter.type && styles.filterBadgeTextActive,
-                    ]}
-                  >
-                    {filter.count}
-                  </Text>
-                </View>
-              </Pressable>
-            ))}
-          </ScrollView>
+          <Text style={styles.markerTitle}>{selectedMarker.title}</Text>
+          <Text style={styles.markerDescription}>{selectedMarker.description}</Text>
 
-          <Pressable style={styles.addButton} onPress={handleAddLandmark}>
-            <IconSymbol name="plus.circle.fill" size={24} color="#ffffff" />
-            <Text style={styles.addButtonText}>Add Personal Landmark</Text>
-          </Pressable>
-
-          {shouldShowSkiResorts && mockSkiResorts.length > 0 && (
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <IconSymbol name="snowflake" size={24} color="#4A90E2" />
-                <Text style={styles.sectionTitle}>Ski Resorts ({mockSkiResorts.length})</Text>
-              </View>
-              {mockSkiResorts.map((resort) => (
-                <MapFeatureCard
-                  key={resort.id}
-                  type="ski-resort"
-                  data={resort}
-                />
-              ))}
-            </View>
-          )}
-
-          {shouldShowForests && (mockNationalForests.length > 0 || mockStateForests.length > 0) && (
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <IconSymbol name="tree.fill" size={24} color="#2ECC71" />
-                <Text style={styles.sectionTitle}>
-                  National & State Forests ({mockNationalForests.length + mockStateForests.length})
+          {selectedMarker.type === 'ski-resort' && (
+            <View style={styles.detailsSection}>
+              <Text style={styles.detailsTitle}>Resort Information</Text>
+              <View style={styles.detailRow}>
+                <IconSymbol ios_icon_name="arrow.up" android_material_icon_name="arrow-upward" size={16} color={colors.text} />
+                <Text style={styles.detailText}>
+                  Base: {(data as SkiResort).baseElevation}ft | Summit: {(data as SkiResort).summitElevation}ft
                 </Text>
               </View>
-              {mockNationalForests.map((forest) => (
-                <MapFeatureCard
-                  key={forest.id}
-                  type="forest"
-                  data={forest}
-                />
-              ))}
-              {mockStateForests.map((forest) => (
-                <MapFeatureCard
-                  key={forest.id}
-                  type="forest"
-                  data={forest}
-                />
-              ))}
-            </View>
-          )}
-
-          {shouldShowCampgrounds && mockCampgrounds.length > 0 && (
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <IconSymbol name="tent.fill" size={24} color="#E67E22" />
-                <Text style={styles.sectionTitle}>Campgrounds ({mockCampgrounds.length})</Text>
-              </View>
-              {mockCampgrounds.map((campground) => (
-                <MapFeatureCard
-                  key={campground.id}
-                  type="campground"
-                  data={campground}
-                />
-              ))}
-            </View>
-          )}
-
-          {shouldShowWildlife && mockWildlifeManagementAreas.length > 0 && (
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <IconSymbol name="pawprint.fill" size={24} color="#9B59B6" />
-                <Text style={styles.sectionTitle}>
-                  Wildlife Management Areas ({mockWildlifeManagementAreas.length})
+              <View style={styles.detailRow}>
+                <IconSymbol ios_icon_name="map" android_material_icon_name="terrain" size={16} color={colors.text} />
+                <Text style={styles.detailText}>
+                  {(data as SkiResort).acres.toLocaleString()} acres | {(data as SkiResort).lifts} lifts
                 </Text>
               </View>
-              {mockWildlifeManagementAreas.map((wma) => (
-                <MapFeatureCard
-                  key={wma.id}
-                  type="wildlife-management-area"
-                  data={wma}
-                />
-              ))}
+              <View style={styles.detailRow}>
+                <IconSymbol ios_icon_name="calendar" android_material_icon_name="calendar-today" size={16} color={colors.text} />
+                <Text style={styles.detailText}>
+                  Season: {(data as SkiResort).season.start} - {(data as SkiResort).season.end}
+                </Text>
+              </View>
+              <Text style={styles.detailsSubtitle}>Trails: {(data as SkiResort).trails.length} total</Text>
             </View>
           )}
 
-          {shouldShowLandmarks && landmarks.length > 0 && (
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <IconSymbol name="mappin.circle.fill" size={24} color={colors.primary} />
-                <Text style={styles.sectionTitle}>Your Landmarks ({landmarks.length})</Text>
+          {selectedMarker.type === 'forest' && (
+            <View style={styles.detailsSection}>
+              <Text style={styles.detailsTitle}>Forest Information</Text>
+              <View style={styles.detailRow}>
+                <IconSymbol ios_icon_name="map" android_material_icon_name="terrain" size={16} color={colors.text} />
+                <Text style={styles.detailText}>
+                  {((data as Forest).acres / 1000).toFixed(0)}K acres
+                </Text>
               </View>
-              {landmarks.map((landmark) => (
-                <View key={landmark.id} style={styles.landmarkCard}>
-                  <View style={styles.landmarkHeader}>
-                    <IconSymbol
-                      name={getLandmarkIcon(landmark.category || 'other') as any}
-                      size={24}
-                      color={colors.primary}
-                    />
-                    <View style={styles.landmarkInfo}>
-                      <Text style={styles.landmarkTitle}>{landmark.title}</Text>
-                      <Text style={styles.landmarkDescription}>{landmark.description}</Text>
-                    </View>
-                    <IconSymbol
-                      name={getVisibilityIcon(landmark.visibility) as any}
-                      size={20}
-                      color={colors.textSecondary}
-                    />
+              <Text style={styles.detailsSubtitle}>Activities:</Text>
+              <View style={styles.tagContainer}>
+                {(data as Forest).activities.map((activity, index) => (
+                  <View key={index} style={styles.tag}>
+                    <Text style={styles.tagText}>{activity}</Text>
                   </View>
-                  <View style={styles.landmarkFooter}>
-                    <Text style={styles.landmarkCategory}>
-                      {landmark.category?.replace('-', ' ') || 'other'}
-                    </Text>
-                    <Text style={styles.landmarkCoords}>
-                      {landmark.latitude.toFixed(4)}, {landmark.longitude.toFixed(4)}
-                    </Text>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {selectedMarker.type === 'campground' && (
+            <View style={styles.detailsSection}>
+              <Text style={styles.detailsTitle}>Campground Information</Text>
+              <View style={styles.detailRow}>
+                <IconSymbol ios_icon_name="tent" android_material_icon_name="camping" size={16} color={colors.text} />
+                <Text style={styles.detailText}>
+                  {(data as Campground).sites} sites | {(data as Campground).fee}
+                </Text>
+              </View>
+              <View style={styles.detailRow}>
+                <IconSymbol ios_icon_name="calendar" android_material_icon_name="calendar-today" size={16} color={colors.text} />
+                <Text style={styles.detailText}>
+                  Season: {(data as Campground).season.start} - {(data as Campground).season.end}
+                </Text>
+              </View>
+              <View style={styles.detailRow}>
+                <IconSymbol 
+                  ios_icon_name={(data as Campground).reservable ? "checkmark.circle" : "xmark.circle"} 
+                  android_material_icon_name={(data as Campground).reservable ? "check-circle" : "cancel"} 
+                  size={16} 
+                  color={(data as Campground).reservable ? '#4CAF50' : '#F44336'} 
+                />
+                <Text style={styles.detailText}>
+                  {(data as Campground).reservable ? 'Reservations Available' : 'First Come, First Served'}
+                </Text>
+              </View>
+              <Text style={styles.detailsSubtitle}>Amenities:</Text>
+              <View style={styles.tagContainer}>
+                {(data as Campground).amenities.map((amenity, index) => (
+                  <View key={index} style={styles.tag}>
+                    <Text style={styles.tagText}>{amenity}</Text>
                   </View>
-                </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {selectedMarker.type === 'wildlife-area' && (
+            <View style={styles.detailsSection}>
+              <Text style={styles.detailsTitle}>Wildlife Management Area</Text>
+              <View style={styles.detailRow}>
+                <IconSymbol ios_icon_name="map" android_material_icon_name="terrain" size={16} color={colors.text} />
+                <Text style={styles.detailText}>
+                  {((data as WildlifeManagementArea).acres / 1000).toFixed(0)}K acres
+                </Text>
+              </View>
+              <Text style={styles.detailsSubtitle}>Species:</Text>
+              <View style={styles.tagContainer}>
+                {(data as WildlifeManagementArea).species.map((species, index) => (
+                  <View key={index} style={styles.tag}>
+                    <Text style={styles.tagText}>{species}</Text>
+                  </View>
+                ))}
+              </View>
+              <Text style={styles.detailsSubtitle}>Hunting Seasons:</Text>
+              {(data as WildlifeManagementArea).huntingSeasons.map((season, index) => (
+                <Text key={index} style={styles.seasonText}>• {season}</Text>
               ))}
             </View>
           )}
 
-          {/* Offline Maps Info */}
-          <View style={styles.featureCard}>
-            <View style={styles.featureHeader}>
-              <IconSymbol name="arrow.down.circle.fill" size={28} color={colors.primary} />
-              <Text style={styles.featureTitle}>Offline Maps</Text>
-            </View>
-            <Text style={styles.featureDescription}>
-              Download maps for offline use in areas with limited connectivity. Perfect for backcountry adventures where cell service is unavailable.
-            </Text>
-            <Pressable style={styles.featureButton}>
-              <Text style={styles.featureButtonText}>Coming Soon</Text>
-              <IconSymbol name="chevron.right" size={16} color={colors.primary} />
+          <View style={styles.buttonContainer}>
+            <Pressable style={styles.directionsButton} onPress={handleGetDirections}>
+              <IconSymbol ios_icon_name="arrow.triangle.turn.up.right.circle.fill" android_material_icon_name="directions" size={20} color="#fff" />
+              <Text style={styles.directionsButtonText}>Get Directions</Text>
             </Pressable>
-          </View>
-
-          {/* AR Features Info */}
-          <View style={styles.featureCard}>
-            <View style={styles.featureHeader}>
-              <IconSymbol name="camera.fill" size={28} color={colors.accent} />
-              <Text style={styles.featureTitle}>Augmented Reality</Text>
-            </View>
-            <Text style={styles.featureDescription}>
-              Overlay trail information, points of interest, and wildlife sightings onto your camera view. See real-time data about your surroundings.
-            </Text>
-            <Pressable style={styles.featureButton}>
-              <Text style={styles.featureButtonText}>Coming Soon</Text>
-              <IconSymbol name="chevron.right" size={16} color={colors.accent} />
+            <Pressable style={styles.closeButton} onPress={() => setSelectedMarker(null)}>
+              <Text style={styles.closeButtonText}>Close</Text>
             </Pressable>
-          </View>
-
-          <View style={styles.legendSection}>
-            <Text style={styles.legendTitle}>Map Legend</Text>
-            <View style={styles.legendGrid}>
-              <LegendItem icon="snowflake" label="Ski Resorts" color="#4A90E2" />
-              <LegendItem icon="tree.fill" label="Forests" color="#2ECC71" />
-              <LegendItem icon="tent.fill" label="Campgrounds" color="#E67E22" />
-              <LegendItem icon="pawprint.fill" label="Wildlife Areas" color="#9B59B6" />
-              <LegendItem icon="mappin.circle.fill" label="Your Landmarks" color={colors.primary} />
-            </View>
           </View>
         </ScrollView>
-
-        <LandmarkModal
-          visible={isModalVisible}
-          onClose={() => setIsModalVisible(false)}
-          onSave={handleSaveLandmark}
-          latitude={currentLocation?.coords.latitude || 39.7392}
-          longitude={currentLocation?.coords.longitude || -104.9903}
-        />
-
-        {/* Layers Modal */}
-        <Modal
-          visible={showLayersModal}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setShowLayersModal(false)}
-        >
-          <Pressable
-            style={styles.modalOverlay}
-            onPress={() => setShowLayersModal(false)}
-          >
-            <View style={styles.layersModalContent}>
-              <View style={styles.layersModalHeader}>
-                <Text style={styles.layersModalTitle}>Map Layers</Text>
-                <Pressable onPress={() => setShowLayersModal(false)}>
-                  <IconSymbol name="xmark.circle.fill" size={28} color={colors.textSecondary} />
-                </Pressable>
-              </View>
-              <ScrollView style={styles.layersModalScroll}>
-                {layerOptions.map((layer) => (
-                  <Pressable
-                    key={layer.key}
-                    style={styles.layerOption}
-                    onPress={() => toggleLayer(layer.key)}
-                  >
-                    <View style={styles.layerOptionLeft}>
-                      <View style={[
-                        styles.layerIconContainer,
-                        enabledLayers[layer.key] && styles.layerIconContainerActive
-                      ]}>
-                        <IconSymbol
-                          name={layer.icon as any}
-                          size={24}
-                          color={enabledLayers[layer.key] ? colors.primary : colors.text}
-                        />
-                      </View>
-                      <View style={styles.layerInfo}>
-                        <Text style={styles.layerLabel}>{layer.label}</Text>
-                        <Text style={styles.layerDescription}>{layer.description}</Text>
-                      </View>
-                    </View>
-                    <View style={[
-                      styles.layerToggle,
-                      enabledLayers[layer.key] && styles.layerToggleActive
-                    ]}>
-                      <View style={[
-                        styles.layerToggleThumb,
-                        enabledLayers[layer.key] && styles.layerToggleThumbActive
-                      ]} />
-                    </View>
-                  </Pressable>
-                ))}
-              </ScrollView>
-              <View style={styles.layersModalFooter}>
-                <Pressable
-                  style={styles.layersModalButton}
-                  onPress={() => setShowLayersModal(false)}
-                >
-                  <Text style={styles.layersModalButtonText}>Done</Text>
-                </Pressable>
-              </View>
-            </View>
-          </Pressable>
-        </Modal>
       </View>
-    </>
-  );
-}
+    );
+  };
 
-function LegendItem({ icon, label, color }: { icon: string; label: string; color: string }) {
   return (
-    <View style={styles.legendItem}>
-      <View style={[styles.legendIcon, { backgroundColor: color + '20' }]}>
-        <IconSymbol name={icon as any} size={16} color={color} />
+    <View style={styles.container}>
+      <Stack.Screen options={{ headerShown: false }} />
+      
+      <MapView
+        ref={mapRef}
+        style={styles.map}
+        provider={PROVIDER_GOOGLE}
+        mapType={mapType}
+        showsUserLocation
+        showsMyLocationButton={false}
+        showsCompass={true}
+        showsScale={true}
+        initialRegion={{
+          latitude: location?.coords.latitude || 39.5501,
+          longitude: location?.coords.longitude || -105.7821,
+          latitudeDelta: 2,
+          longitudeDelta: 2,
+        }}
+      >
+        {filteredMarkers.map(marker => (
+          <Marker
+            key={marker.id}
+            coordinate={marker.coordinate}
+            title={marker.title}
+            description={marker.description}
+            pinColor={getMarkerColor(marker.type)}
+            onPress={() => handleMarkerPress(marker)}
+          >
+            <Callout>
+              <View style={styles.calloutContainer}>
+                <Text style={styles.calloutTitle}>{marker.title}</Text>
+                <Text style={styles.calloutDescription}>{marker.description}</Text>
+              </View>
+            </Callout>
+          </Marker>
+        ))}
+
+        {location && (
+          <Circle
+            center={{
+              latitude: location.coords.latitude,
+              longitude: location.coords.longitude,
+            }}
+            radius={userRadius * 1609.34} // Convert miles to meters
+            strokeColor="rgba(0, 122, 255, 0.3)"
+            fillColor="rgba(0, 122, 255, 0.1)"
+          />
+        )}
+      </MapView>
+
+      {/* Top Controls */}
+      <View style={styles.topControls}>
+        <Pressable style={styles.searchButton} onPress={() => setShowSearch(!showSearch)}>
+          <IconSymbol ios_icon_name="magnifyingglass" android_material_icon_name="search" size={24} color="#fff" />
+        </Pressable>
       </View>
-      <Text style={styles.legendLabel}>{label}</Text>
+
+      {/* Search Bar */}
+      {showSearch && (
+        <View style={styles.searchContainer}>
+          <IconSymbol ios_icon_name="magnifyingglass" android_material_icon_name="search" size={20} color="#666" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search locations..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholderTextColor="#999"
+          />
+          {searchQuery.length > 0 && (
+            <Pressable onPress={() => setSearchQuery('')}>
+              <IconSymbol ios_icon_name="xmark.circle.fill" android_material_icon_name="cancel" size={20} color="#666" />
+            </Pressable>
+          )}
+        </View>
+      )}
+
+      {/* Filter Buttons */}
+      <ScrollView 
+        horizontal 
+        style={styles.filterContainer} 
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filterContent}
+      >
+        <Pressable 
+          style={[styles.filterButton, filter === 'all' && styles.filterButtonActive]} 
+          onPress={() => setFilter('all')}
+        >
+          <Text style={[styles.filterButtonText, filter === 'all' && styles.filterButtonTextActive]}>
+            All ({markers.length})
+          </Text>
+        </Pressable>
+        <Pressable 
+          style={[styles.filterButton, filter === 'ski-resort' && styles.filterButtonActive]} 
+          onPress={() => setFilter('ski-resort')}
+        >
+          <IconSymbol ios_icon_name="snow" android_material_icon_name="downhill-skiing" size={16} color={filter === 'ski-resort' ? '#fff' : '#666'} />
+          <Text style={[styles.filterButtonText, filter === 'ski-resort' && styles.filterButtonTextActive]}>
+            Ski Resorts
+          </Text>
+        </Pressable>
+        <Pressable 
+          style={[styles.filterButton, filter === 'forest' && styles.filterButtonActive]} 
+          onPress={() => setFilter('forest')}
+        >
+          <IconSymbol ios_icon_name="tree" android_material_icon_name="park" size={16} color={filter === 'forest' ? '#fff' : '#666'} />
+          <Text style={[styles.filterButtonText, filter === 'forest' && styles.filterButtonTextActive]}>
+            Forests
+          </Text>
+        </Pressable>
+        <Pressable 
+          style={[styles.filterButton, filter === 'campground' && styles.filterButtonActive]} 
+          onPress={() => setFilter('campground')}
+        >
+          <IconSymbol ios_icon_name="tent" android_material_icon_name="camping" size={16} color={filter === 'campground' ? '#fff' : '#666'} />
+          <Text style={[styles.filterButtonText, filter === 'campground' && styles.filterButtonTextActive]}>
+            Campgrounds
+          </Text>
+        </Pressable>
+        <Pressable 
+          style={[styles.filterButton, filter === 'wildlife-area' && styles.filterButtonActive]} 
+          onPress={() => setFilter('wildlife-area')}
+        >
+          <IconSymbol ios_icon_name="pawprint" android_material_icon_name="pets" size={16} color={filter === 'wildlife-area' ? '#fff' : '#666'} />
+          <Text style={[styles.filterButtonText, filter === 'wildlife-area' && styles.filterButtonTextActive]}>
+            Wildlife Areas
+          </Text>
+        </Pressable>
+      </ScrollView>
+
+      {/* Right Side Controls */}
+      <View style={styles.rightControls}>
+        <Pressable style={styles.controlButton} onPress={toggleMapType}>
+          <IconSymbol ios_icon_name="map" android_material_icon_name="map" size={24} color="#fff" />
+          <Text style={styles.controlButtonLabel}>{mapType}</Text>
+        </Pressable>
+        <Pressable style={styles.controlButton} onPress={centerOnUser}>
+          <IconSymbol ios_icon_name="location.fill" android_material_icon_name="my-location" size={24} color="#fff" />
+        </Pressable>
+        <Pressable style={styles.controlButton} onPress={zoomIn}>
+          <IconSymbol ios_icon_name="plus" android_material_icon_name="add" size={24} color="#fff" />
+        </Pressable>
+        <Pressable style={styles.controlButton} onPress={zoomOut}>
+          <IconSymbol ios_icon_name="minus" android_material_icon_name="remove" size={24} color="#fff" />
+        </Pressable>
+      </View>
+
+      {/* Results Counter */}
+      {searchQuery.length > 0 && (
+        <View style={styles.resultsCounter}>
+          <Text style={styles.resultsCounterText}>
+            {filteredMarkers.length} result{filteredMarkers.length !== 1 ? 's' : ''} found
+          </Text>
+        </View>
+      )}
+
+      {/* Bottom Sheet */}
+      {selectedMarker && renderMarkerDetails()}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  container: { 
     flex: 1,
     backgroundColor: colors.background,
   },
-  content: {
-    padding: 16,
-    paddingBottom: 16,
+  map: { 
+    flex: 1,
   },
-  contentWithTabBar: {
-    paddingTop: 60,
-    paddingBottom: 100,
-  },
-  topBar: {
+  topControls: {
+    position: 'absolute',
+    top: Platform.OS === 'android' ? 60 : 70,
+    left: 16,
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  topLeft: {
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'center',
-  },
-  topButton: {
-    padding: 8,
-  },
-  topRight: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  trackMilesButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.primary,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  trackMilesText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  trackMilesButtonIOS: {
-    padding: 4,
-  },
-  header: {
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    lineHeight: 20,
-  },
-  locationCard: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    boxShadow: `0px 2px 8px ${colors.shadow}`,
-    elevation: 3,
-  },
-  locationHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: 12,
-    marginBottom: 12,
   },
-  locationTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    flex: 1,
-  },
-  refreshButton: {
-    padding: 4,
-  },
-  locationCoords: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    marginBottom: 16,
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-  },
-  locationStats: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  locationStat: {
-    flex: 1,
-  },
-  locationStatLabel: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginBottom: 4,
-  },
-  locationStatValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  permissionCard: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
-    marginBottom: 16,
-    boxShadow: `0px 2px 8px ${colors.shadow}`,
-    elevation: 3,
-  },
-  permissionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  permissionText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: 20,
-    lineHeight: 20,
-  },
-  permissionButton: {
+  searchButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: colors.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  permissionButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '700',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
   searchContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 16,
-  },
-  searchInputContainer: {
-    flex: 1,
+    position: 'absolute',
+    top: Platform.OS === 'android' ? 60 : 70,
+    left: 16,
+    right: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.card,
-    borderRadius: 12,
+    backgroundColor: '#fff',
+    borderRadius: 24,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    gap: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    gap: 8,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: colors.text,
-  },
-  searchButton: {
-    backgroundColor: colors.primary,
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: `0px 2px 8px ${colors.shadow}`,
-    elevation: 3,
-  },
-  mapControlsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 16,
-  },
-  mapViewSelector: {
-    flex: 1,
-  },
-  mapViewContent: {
-    gap: 8,
-  },
-  mapViewButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 12,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  mapViewButtonActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  mapViewText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  mapViewTextActive: {
-    color: '#ffffff',
-  },
-  layersButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 12,
-    backgroundColor: colors.accent,
-    boxShadow: `0px 2px 8px ${colors.shadow}`,
-    elevation: 3,
-  },
-  layersButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#ffffff',
-  },
-  activeLayersContainer: {
-    marginBottom: 16,
-  },
-  activeLayersLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    marginBottom: 8,
-  },
-  activeLayersList: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  activeLayerChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: colors.primary + '20',
-    borderWidth: 1,
-    borderColor: colors.primary + '40',
-  },
-  activeLayerText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  mapPlaceholder: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-    minHeight: 200,
-    boxShadow: `0px 2px 8px ${colors.shadow}`,
-    elevation: 3,
-  },
-  placeholderText: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
-    marginTop: 16,
-  },
-  placeholderSubtext: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 8,
-  },
-  placeholderLocation: {
-    fontSize: 14,
-    color: colors.primary,
-    marginTop: 12,
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    color: '#000',
   },
   filterContainer: {
-    marginBottom: 16,
+    position: 'absolute',
+    top: Platform.OS === 'android' ? 120 : 130,
+    left: 0,
+    right: 0,
     maxHeight: 50,
   },
   filterContent: {
+    paddingHorizontal: 16,
     gap: 8,
-    paddingRight: 16,
   },
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#fff',
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: colors.card,
-    gap: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
+    gap: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
   },
   filterButtonActive: {
     backgroundColor: colors.primary,
-    borderColor: colors.primary,
   },
   filterButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.text,
+    color: '#666',
   },
   filterButtonTextActive: {
-    color: '#ffffff',
+    color: '#fff',
   },
-  filterBadge: {
-    backgroundColor: colors.background,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-    minWidth: 24,
-    alignItems: 'center',
-  },
-  filterBadgeActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  filterBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  filterBadgeTextActive: {
-    color: '#ffffff',
-  },
-  addButton: {
-    backgroundColor: colors.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 24,
-    gap: 8,
-    boxShadow: `0px 2px 8px ${colors.shadow}`,
-    elevation: 3,
-  },
-  addButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  landmarkCard: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    boxShadow: `0px 2px 8px ${colors.shadow}`,
-    elevation: 3,
-  },
-  landmarkHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 12,
+  rightControls: {
+    position: 'absolute',
+    top: Platform.OS === 'android' ? 60 : 70,
+    right: 16,
     gap: 12,
   },
-  landmarkInfo: {
-    flex: 1,
-  },
-  landmarkTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 4,
-  },
-  landmarkDescription: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    lineHeight: 20,
-  },
-  landmarkFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  landmarkCategory: {
-    fontSize: 12,
-    color: colors.primary,
-    fontWeight: '600',
-    textTransform: 'capitalize',
-  },
-  landmarkCoords: {
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  featureCard: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    boxShadow: `0px 2px 8px ${colors.shadow}`,
-    elevation: 3,
-  },
-  featureHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 12,
-  },
-  featureTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  featureDescription: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  featureButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.background,
-    padding: 12,
-    borderRadius: 8,
-  },
-  featureButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  legendSection: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 8,
-    boxShadow: `0px 2px 8px ${colors.shadow}`,
-    elevation: 3,
-  },
-  legendTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 16,
-  },
-  legendGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    width: '45%',
-  },
-  legendIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  legendLabel: {
-    fontSize: 13,
-    color: colors.text,
-    flex: 1,
-  },
-  headerButton: {
-    padding: 4,
-  },
-  headerButtonGroup: {
-    flexDirection: 'row',
-    gap: 12,
-    marginRight: 8,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  layersModalContent: {
-    backgroundColor: colors.card,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: '80%',
-    boxShadow: `0px -4px 16px ${colors.shadow}`,
-    elevation: 5,
-  },
-  layersModalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  layersModalTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  layersModalScroll: {
-    maxHeight: 400,
-  },
-  layerOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  layerOptionLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    flex: 1,
-  },
-  layerIconContainer: {
+  controlButton: {
     width: 48,
     height: 48,
-    borderRadius: 12,
-    backgroundColor: colors.background,
+    borderRadius: 24,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
-  layerIconContainerActive: {
-    backgroundColor: colors.primary + '20',
+  controlButtonLabel: {
+    fontSize: 8,
+    color: '#fff',
+    marginTop: 2,
+    textTransform: 'capitalize',
   },
-  layerInfo: {
-    flex: 1,
+  resultsCounter: {
+    position: 'absolute',
+    top: Platform.OS === 'android' ? 180 : 190,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 16,
   },
-  layerLabel: {
-    fontSize: 16,
+  resultsCounterText: {
+    color: '#fff',
+    fontSize: 14,
     fontWeight: '600',
-    color: colors.text,
+  },
+  calloutContainer: {
+    width: 200,
+    padding: 8,
+  },
+  calloutTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
     marginBottom: 4,
   },
-  layerDescription: {
-    fontSize: 13,
-    color: colors.textSecondary,
+  calloutDescription: {
+    fontSize: 12,
+    color: '#666',
   },
-  layerToggle: {
-    width: 52,
-    height: 32,
+  bottomSheet: {
+    position: 'absolute',
+    bottom: 80,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 10,
+    maxHeight: '60%',
+  },
+  bottomSheetHeader: {
+    alignItems: 'center',
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  bottomSheetHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#DDD',
+    borderRadius: 2,
+  },
+  bottomSheetContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  markerTypeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  markerTypeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: colors.border,
-    padding: 2,
+    gap: 6,
+  },
+  markerTypeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  distanceText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '600',
+  },
+  markerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: '#000',
+  },
+  markerDescription: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 16,
+    lineHeight: 22,
+  },
+  detailsSection: {
+    marginBottom: 16,
+  },
+  detailsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    color: '#000',
+  },
+  detailsSubtitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginTop: 12,
+    marginBottom: 8,
+    color: '#333',
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 8,
+  },
+  detailText: {
+    fontSize: 14,
+    color: '#666',
+    flex: 1,
+  },
+  tagContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
+  },
+  tag: {
+    backgroundColor: '#F0F0F0',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  tagText: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500',
+  },
+  seasonText: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+  },
+  directionsButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+  },
+  directionsButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  closeButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#F0F0F0',
+    alignItems: 'center',
     justifyContent: 'center',
   },
-  layerToggleActive: {
-    backgroundColor: colors.primary,
-  },
-  layerToggleThumb: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#ffffff',
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.2)',
-    elevation: 2,
-  },
-  layerToggleThumbActive: {
-    alignSelf: 'flex-end',
-  },
-  layersModalFooter: {
-    padding: 20,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  layersModalButton: {
-    backgroundColor: colors.primary,
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  layersModalButtonText: {
+  closeButtonText: {
+    color: '#666',
     fontSize: 16,
-    fontWeight: '700',
-    color: '#ffffff',
+    fontWeight: '600',
   },
 });
