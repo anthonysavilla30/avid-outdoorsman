@@ -264,7 +264,17 @@ export default function MapScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: false }} />
+      <Stack.Screen 
+        options={{ 
+          headerShown: true,
+          title: 'Map',
+          headerStyle: {
+            backgroundColor: colors.background,
+          },
+          headerTintColor: colors.text,
+          headerBackTitle: 'Back',
+        }} 
+      />
       
       {/* Map Notice */}
       <View style={styles.mapNotice}>
@@ -393,7 +403,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    paddingTop: Platform.OS === 'android' ? 60 : 70,
   },
   mapNoticeTitle: {
     fontSize: 20,
