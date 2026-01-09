@@ -1,7 +1,6 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, Alert, Platform, ScrollView, TextInput, Modal } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE, Region, Circle, Callout } from 'react-native-maps';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Pressable, Alert, Platform, ScrollView, TextInput } from 'react-native';
 import * as Location from 'expo-location';
 import { IconSymbol } from '@/components/IconSymbol';
 import { Stack, useRouter } from 'expo-router';
@@ -28,15 +27,11 @@ type FilterType = 'all' | 'ski-resort' | 'forest' | 'campground' | 'wildlife-are
 
 export default function MapScreen() {
   const router = useRouter();
-  const mapRef = useRef<MapView>(null);
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
-  const [mapType, setMapType] = useState<'standard' | 'satellite' | 'hybrid'>('standard');
   const [selectedMarker, setSelectedMarker] = useState<MapMarker | null>(null);
   const [markers, setMarkers] = useState<MapMarker[]>([]);
   const [filter, setFilter] = useState<FilterType>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [showSearch, setShowSearch] = useState(false);
-  const [userRadius, setUserRadius] = useState<number>(50); // miles
 
   useEffect(() => {
     requestLocationPermission();
@@ -52,7 +47,7 @@ export default function MapScreen() {
         console.log('User location obtained:', loc.coords);
       } else {
         console.log('Location permission denied');
-        Alert.alert('Location Permission', 'Please enable location services to see your position on the map.');
+        Alert.alert('Location Permission', 'Please enable location services to see your position.');
       }
     } catch (error) {
       console.error('Error requesting location permission:', error);
@@ -106,48 +101,6 @@ export default function MapScreen() {
     console.log(`Loaded ${allMarkers.length} markers`);
   };
 
-  const centerOnUser = () => {
-    if (location && mapRef.current) {
-      mapRef.current.animateToRegion({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        latitudeDelta: 0.5,
-        longitudeDelta: 0.5,
-      }, 1000);
-      console.log('Centered map on user location');
-    } else {
-      Alert.alert('Location Unavailable', 'Unable to get your current location.');
-    }
-  };
-
-  const toggleMapType = () => {
-    const types: Array<'standard' | 'satellite' | 'hybrid'> = ['standard', 'satellite', 'hybrid'];
-    const currentIndex = types.indexOf(mapType);
-    const nextType = types[(currentIndex + 1) % types.length];
-    setMapType(nextType);
-    console.log('Map type changed to:', nextType);
-  };
-
-  const zoomIn = () => {
-    if (mapRef.current) {
-      mapRef.current.getCamera().then(camera => {
-        if (camera.zoom) {
-          mapRef.current?.animateCamera({ zoom: camera.zoom + 1 }, { duration: 300 });
-        }
-      });
-    }
-  };
-
-  const zoomOut = () => {
-    if (mapRef.current) {
-      mapRef.current.getCamera().then(camera => {
-        if (camera.zoom) {
-          mapRef.current?.animateCamera({ zoom: camera.zoom - 1 }, { duration: 300 });
-        }
-      });
-    }
-  };
-
   const getMarkerColor = (type: string) => {
     switch(type) {
       case 'ski-resort': return '#2196F3';
@@ -197,6 +150,21 @@ export default function MapScreen() {
       marker.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       marker.description.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesFilter && matchesSearch;
+  }).sort((a, b) => {
+    if (!location) return 0;
+    const distA = calculateDistance(
+      location.coords.latitude,
+      location.coords.longitude,
+      a.coordinate.latitude,
+      a.coordinate.longitude
+    );
+    const distB = calculateDistance(
+      location.coords.latitude,
+      location.coords.longitude,
+      b.coordinate.latitude,
+      b.coordinate.longitude
+    );
+    return distA - distB;
   });
 
   const handleMarkerPress = (marker: MapMarker) => {
@@ -217,155 +185,80 @@ export default function MapScreen() {
     }
   };
 
-  const renderMarkerDetails = () => {
-    if (!selectedMarker) return null;
-
-    const data = selectedMarker.data;
+  const renderLocationCard = (marker: MapMarker) => {
+    const data = marker.data;
     
     return (
-      <View style={styles.bottomSheet}>
-        <View style={styles.bottomSheetHeader}>
-          <View style={styles.bottomSheetHandle} />
+      <Pressable 
+        key={marker.id}
+        style={styles.locationCard}
+        onPress={() => handleMarkerPress(marker)}
+      >
+        <View style={styles.locationHeader}>
+          <View style={[styles.locationIcon, { backgroundColor: getMarkerColor(marker.type) }]}>
+            <IconSymbol 
+              ios_icon_name="mappin.circle.fill" 
+              android_material_icon_name={getMarkerIcon(marker.type)} 
+              size={24} 
+              color="#fff" 
+            />
+          </View>
+          <View style={styles.locationInfo}>
+            <Text style={styles.locationTitle}>{marker.title}</Text>
+            <Text style={styles.locationType}>
+              {marker.type.replace('-', ' ').toUpperCase()}
+            </Text>
+          </View>
+          {location && (
+            <Text style={styles.locationDistance}>{getDistanceFromUser(marker)}</Text>
+          )}
         </View>
         
-        <ScrollView style={styles.bottomSheetContent} showsVerticalScrollIndicator={false}>
-          <View style={styles.markerTypeContainer}>
-            <View style={[styles.markerTypeBadge, { backgroundColor: getMarkerColor(selectedMarker.type) }]}>
-              <IconSymbol 
-                ios_icon_name="mappin.circle.fill" 
-                android_material_icon_name={getMarkerIcon(selectedMarker.type)} 
-                size={16} 
-                color="#fff" 
-              />
-              <Text style={styles.markerTypeText}>
-                {selectedMarker.type.replace('-', ' ').toUpperCase()}
-              </Text>
+        <Text style={styles.locationDescription} numberOfLines={2}>
+          {marker.description}
+        </Text>
+
+        {marker.type === 'ski-resort' && (
+          <View style={styles.quickStats}>
+            <View style={styles.statItem}>
+              <IconSymbol ios_icon_name="arrow.up" android_material_icon_name="arrow-upward" size={14} color={colors.text} />
+              <Text style={styles.statText}>{(data as SkiResort).summitElevation}ft</Text>
             </View>
-            {location && (
-              <Text style={styles.distanceText}>{getDistanceFromUser(selectedMarker)}</Text>
-            )}
+            <View style={styles.statItem}>
+              <IconSymbol ios_icon_name="map" android_material_icon_name="terrain" size={14} color={colors.text} />
+              <Text style={styles.statText}>{(data as SkiResort).acres} acres</Text>
+            </View>
+            <View style={styles.statItem}>
+              <IconSymbol ios_icon_name="tram.fill" android_material_icon_name="cable-car" size={14} color={colors.text} />
+              <Text style={styles.statText}>{(data as SkiResort).lifts} lifts</Text>
+            </View>
           </View>
+        )}
 
-          <Text style={styles.markerTitle}>{selectedMarker.title}</Text>
-          <Text style={styles.markerDescription}>{selectedMarker.description}</Text>
-
-          {selectedMarker.type === 'ski-resort' && (
-            <View style={styles.detailsSection}>
-              <Text style={styles.detailsTitle}>Resort Information</Text>
-              <View style={styles.detailRow}>
-                <IconSymbol ios_icon_name="arrow.up" android_material_icon_name="arrow-upward" size={16} color={colors.text} />
-                <Text style={styles.detailText}>
-                  Base: {(data as SkiResort).baseElevation}ft | Summit: {(data as SkiResort).summitElevation}ft
-                </Text>
-              </View>
-              <View style={styles.detailRow}>
-                <IconSymbol ios_icon_name="map" android_material_icon_name="terrain" size={16} color={colors.text} />
-                <Text style={styles.detailText}>
-                  {(data as SkiResort).acres.toLocaleString()} acres | {(data as SkiResort).lifts} lifts
-                </Text>
-              </View>
-              <View style={styles.detailRow}>
-                <IconSymbol ios_icon_name="calendar" android_material_icon_name="calendar-today" size={16} color={colors.text} />
-                <Text style={styles.detailText}>
-                  Season: {(data as SkiResort).season.start} - {(data as SkiResort).season.end}
-                </Text>
-              </View>
-              <Text style={styles.detailsSubtitle}>Trails: {(data as SkiResort).trails.length} total</Text>
+        {marker.type === 'campground' && (
+          <View style={styles.quickStats}>
+            <View style={styles.statItem}>
+              <IconSymbol ios_icon_name="tent" android_material_icon_name="camping" size={14} color={colors.text} />
+              <Text style={styles.statText}>{(data as Campground).sites} sites</Text>
             </View>
-          )}
-
-          {selectedMarker.type === 'forest' && (
-            <View style={styles.detailsSection}>
-              <Text style={styles.detailsTitle}>Forest Information</Text>
-              <View style={styles.detailRow}>
-                <IconSymbol ios_icon_name="map" android_material_icon_name="terrain" size={16} color={colors.text} />
-                <Text style={styles.detailText}>
-                  {((data as Forest).acres / 1000).toFixed(0)}K acres
-                </Text>
-              </View>
-              <Text style={styles.detailsSubtitle}>Activities:</Text>
-              <View style={styles.tagContainer}>
-                {(data as Forest).activities.map((activity, index) => (
-                  <View key={index} style={styles.tag}>
-                    <Text style={styles.tagText}>{activity}</Text>
-                  </View>
-                ))}
-              </View>
+            <View style={styles.statItem}>
+              <IconSymbol ios_icon_name="dollarsign.circle" android_material_icon_name="attach-money" size={14} color={colors.text} />
+              <Text style={styles.statText}>{(data as Campground).fee}</Text>
             </View>
-          )}
-
-          {selectedMarker.type === 'campground' && (
-            <View style={styles.detailsSection}>
-              <Text style={styles.detailsTitle}>Campground Information</Text>
-              <View style={styles.detailRow}>
-                <IconSymbol ios_icon_name="tent" android_material_icon_name="camping" size={16} color={colors.text} />
-                <Text style={styles.detailText}>
-                  {(data as Campground).sites} sites | {(data as Campground).fee}
-                </Text>
-              </View>
-              <View style={styles.detailRow}>
-                <IconSymbol ios_icon_name="calendar" android_material_icon_name="calendar-today" size={16} color={colors.text} />
-                <Text style={styles.detailText}>
-                  Season: {(data as Campground).season.start} - {(data as Campground).season.end}
-                </Text>
-              </View>
-              <View style={styles.detailRow}>
-                <IconSymbol 
-                  ios_icon_name={(data as Campground).reservable ? "checkmark.circle" : "xmark.circle"} 
-                  android_material_icon_name={(data as Campground).reservable ? "check-circle" : "cancel"} 
-                  size={16} 
-                  color={(data as Campground).reservable ? '#4CAF50' : '#F44336'} 
-                />
-                <Text style={styles.detailText}>
-                  {(data as Campground).reservable ? 'Reservations Available' : 'First Come, First Served'}
-                </Text>
-              </View>
-              <Text style={styles.detailsSubtitle}>Amenities:</Text>
-              <View style={styles.tagContainer}>
-                {(data as Campground).amenities.map((amenity, index) => (
-                  <View key={index} style={styles.tag}>
-                    <Text style={styles.tagText}>{amenity}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          )}
-
-          {selectedMarker.type === 'wildlife-area' && (
-            <View style={styles.detailsSection}>
-              <Text style={styles.detailsTitle}>Wildlife Management Area</Text>
-              <View style={styles.detailRow}>
-                <IconSymbol ios_icon_name="map" android_material_icon_name="terrain" size={16} color={colors.text} />
-                <Text style={styles.detailText}>
-                  {((data as WildlifeManagementArea).acres / 1000).toFixed(0)}K acres
-                </Text>
-              </View>
-              <Text style={styles.detailsSubtitle}>Species:</Text>
-              <View style={styles.tagContainer}>
-                {(data as WildlifeManagementArea).species.map((species, index) => (
-                  <View key={index} style={styles.tag}>
-                    <Text style={styles.tagText}>{species}</Text>
-                  </View>
-                ))}
-              </View>
-              <Text style={styles.detailsSubtitle}>Hunting Seasons:</Text>
-              {(data as WildlifeManagementArea).huntingSeasons.map((season, index) => (
-                <Text key={index} style={styles.seasonText}>• {season}</Text>
-              ))}
-            </View>
-          )}
-
-          <View style={styles.buttonContainer}>
-            <Pressable style={styles.directionsButton} onPress={handleGetDirections}>
-              <IconSymbol ios_icon_name="arrow.triangle.turn.up.right.circle.fill" android_material_icon_name="directions" size={20} color="#fff" />
-              <Text style={styles.directionsButtonText}>Get Directions</Text>
-            </Pressable>
-            <Pressable style={styles.closeButton} onPress={() => setSelectedMarker(null)}>
-              <Text style={styles.closeButtonText}>Close</Text>
-            </Pressable>
           </View>
-        </ScrollView>
-      </View>
+        )}
+
+        <Pressable 
+          style={styles.directionsButton}
+          onPress={() => {
+            setSelectedMarker(marker);
+            handleGetDirections();
+          }}
+        >
+          <IconSymbol ios_icon_name="arrow.triangle.turn.up.right.circle.fill" android_material_icon_name="directions" size={18} color={colors.primary} />
+          <Text style={styles.directionsButtonText}>Get Directions</Text>
+        </Pressable>
+      </Pressable>
     );
   };
 
@@ -373,78 +266,40 @@ export default function MapScreen() {
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
       
-      <MapView
-        ref={mapRef}
-        style={styles.map}
-        provider={PROVIDER_GOOGLE}
-        mapType={mapType}
-        showsUserLocation
-        showsMyLocationButton={false}
-        showsCompass={true}
-        showsScale={true}
-        initialRegion={{
-          latitude: location?.coords.latitude || 39.5501,
-          longitude: location?.coords.longitude || -105.7821,
-          latitudeDelta: 2,
-          longitudeDelta: 2,
-        }}
-      >
-        {filteredMarkers.map(marker => (
-          <Marker
-            key={marker.id}
-            coordinate={marker.coordinate}
-            title={marker.title}
-            description={marker.description}
-            pinColor={getMarkerColor(marker.type)}
-            onPress={() => handleMarkerPress(marker)}
-          >
-            <Callout>
-              <View style={styles.calloutContainer}>
-                <Text style={styles.calloutTitle}>{marker.title}</Text>
-                <Text style={styles.calloutDescription}>{marker.description}</Text>
-              </View>
-            </Callout>
-          </Marker>
-        ))}
-
+      {/* Map Notice */}
+      <View style={styles.mapNotice}>
+        <IconSymbol ios_icon_name="map.fill" android_material_icon_name="map" size={48} color={colors.primary} />
+        <Text style={styles.mapNoticeTitle}>Interactive Map Coming Soon</Text>
+        <Text style={styles.mapNoticeText}>
+          Full interactive maps with react-native-maps are currently being integrated. 
+          For now, browse locations below and get directions to any spot!
+        </Text>
         {location && (
-          <Circle
-            center={{
-              latitude: location.coords.latitude,
-              longitude: location.coords.longitude,
-            }}
-            radius={userRadius * 1609.34} // Convert miles to meters
-            strokeColor="rgba(0, 122, 255, 0.3)"
-            fillColor="rgba(0, 122, 255, 0.1)"
-          />
+          <View style={styles.locationBadge}>
+            <IconSymbol ios_icon_name="location.fill" android_material_icon_name="my-location" size={16} color="#fff" />
+            <Text style={styles.locationBadgeText}>
+              Your location: {location.coords.latitude.toFixed(4)}, {location.coords.longitude.toFixed(4)}
+            </Text>
+          </View>
         )}
-      </MapView>
-
-      {/* Top Controls */}
-      <View style={styles.topControls}>
-        <Pressable style={styles.searchButton} onPress={() => setShowSearch(!showSearch)}>
-          <IconSymbol ios_icon_name="magnifyingglass" android_material_icon_name="search" size={24} color="#fff" />
-        </Pressable>
       </View>
 
       {/* Search Bar */}
-      {showSearch && (
-        <View style={styles.searchContainer}>
-          <IconSymbol ios_icon_name="magnifyingglass" android_material_icon_name="search" size={20} color="#666" />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search locations..."
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholderTextColor="#999"
-          />
-          {searchQuery.length > 0 && (
-            <Pressable onPress={() => setSearchQuery('')}>
-              <IconSymbol ios_icon_name="xmark.circle.fill" android_material_icon_name="cancel" size={20} color="#666" />
-            </Pressable>
-          )}
-        </View>
-      )}
+      <View style={styles.searchContainer}>
+        <IconSymbol ios_icon_name="magnifyingglass" android_material_icon_name="search" size={20} color="#666" />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search locations..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholderTextColor="#999"
+        />
+        {searchQuery.length > 0 && (
+          <Pressable onPress={() => setSearchQuery('')}>
+            <IconSymbol ios_icon_name="xmark.circle.fill" android_material_icon_name="cancel" size={20} color="#666" />
+          </Pressable>
+        )}
+      </View>
 
       {/* Filter Buttons */}
       <ScrollView 
@@ -499,34 +354,30 @@ export default function MapScreen() {
         </Pressable>
       </ScrollView>
 
-      {/* Right Side Controls */}
-      <View style={styles.rightControls}>
-        <Pressable style={styles.controlButton} onPress={toggleMapType}>
-          <IconSymbol ios_icon_name="map" android_material_icon_name="map" size={24} color="#fff" />
-          <Text style={styles.controlButtonLabel}>{mapType}</Text>
-        </Pressable>
-        <Pressable style={styles.controlButton} onPress={centerOnUser}>
-          <IconSymbol ios_icon_name="location.fill" android_material_icon_name="my-location" size={24} color="#fff" />
-        </Pressable>
-        <Pressable style={styles.controlButton} onPress={zoomIn}>
-          <IconSymbol ios_icon_name="plus" android_material_icon_name="add" size={24} color="#fff" />
-        </Pressable>
-        <Pressable style={styles.controlButton} onPress={zoomOut}>
-          <IconSymbol ios_icon_name="minus" android_material_icon_name="remove" size={24} color="#fff" />
-        </Pressable>
+      {/* Results Counter */}
+      <View style={styles.resultsHeader}>
+        <Text style={styles.resultsText}>
+          {filteredMarkers.length} location{filteredMarkers.length !== 1 ? 's' : ''} found
+          {location && ' (sorted by distance)'}
+        </Text>
       </View>
 
-      {/* Results Counter */}
-      {searchQuery.length > 0 && (
-        <View style={styles.resultsCounter}>
-          <Text style={styles.resultsCounterText}>
-            {filteredMarkers.length} result{filteredMarkers.length !== 1 ? 's' : ''} found
-          </Text>
-        </View>
-      )}
-
-      {/* Bottom Sheet */}
-      {selectedMarker && renderMarkerDetails()}
+      {/* Locations List */}
+      <ScrollView 
+        style={styles.locationsList}
+        contentContainerStyle={styles.locationsListContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {filteredMarkers.map(marker => renderLocationCard(marker))}
+        
+        {filteredMarkers.length === 0 && (
+          <View style={styles.emptyState}>
+            <IconSymbol ios_icon_name="magnifyingglass" android_material_icon_name="search" size={64} color="#ccc" />
+            <Text style={styles.emptyStateText}>No locations found</Text>
+            <Text style={styles.emptyStateSubtext}>Try adjusting your search or filters</Text>
+          </View>
+        )}
+      </ScrollView>
     </View>
   );
 }
@@ -536,58 +387,64 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  map: { 
-    flex: 1,
-  },
-  topControls: {
-    position: 'absolute',
-    top: Platform.OS === 'android' ? 60 : 70,
-    left: 16,
-    flexDirection: 'row',
-    gap: 12,
-  },
-  searchButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.primary,
+  mapNotice: {
+    backgroundColor: colors.card,
+    padding: 20,
     alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    paddingTop: Platform.OS === 'android' ? 60 : 70,
+  },
+  mapNoticeTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  mapNoticeText: {
+    fontSize: 14,
+    color: colors.text,
+    textAlign: 'center',
+    opacity: 0.7,
+    lineHeight: 20,
+  },
+  locationBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginTop: 12,
+    gap: 6,
+  },
+  locationBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
   },
   searchContainer: {
-    position: 'absolute',
-    top: Platform.OS === 'android' ? 60 : 70,
-    left: 16,
-    right: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 24,
+    backgroundColor: colors.card,
+    borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    margin: 16,
+    marginBottom: 8,
     gap: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#000',
+    color: colors.text,
   },
   filterContainer: {
-    position: 'absolute',
-    top: Platform.OS === 'android' ? 120 : 130,
-    left: 0,
-    right: 0,
     maxHeight: 50,
+    marginBottom: 8,
   },
   filterContent: {
     paddingHorizontal: 16,
@@ -596,226 +453,140 @@ const styles = StyleSheet.create({
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
     gap: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   filterButtonActive: {
     backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   filterButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
+    color: colors.text,
   },
   filterButtonTextActive: {
     color: '#fff',
   },
-  rightControls: {
-    position: 'absolute',
-    top: Platform.OS === 'android' ? 60 : 70,
-    right: 16,
-    gap: 12,
+  resultsHeader: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
-  controlButton: {
+  resultsText: {
+    fontSize: 14,
+    color: colors.text,
+    opacity: 0.6,
+    fontWeight: '500',
+  },
+  locationsList: {
+    flex: 1,
+  },
+  locationsListContent: {
+    padding: 16,
+    paddingBottom: 100,
+  },
+  locationCard: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  locationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  locationIcon: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    marginRight: 12,
   },
-  controlButtonLabel: {
-    fontSize: 8,
-    color: '#fff',
-    marginTop: 2,
-    textTransform: 'capitalize',
+  locationInfo: {
+    flex: 1,
   },
-  resultsCounter: {
-    position: 'absolute',
-    top: Platform.OS === 'android' ? 180 : 190,
-    alignSelf: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 16,
-  },
-  resultsCounterText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  calloutContainer: {
-    width: 200,
-    padding: 8,
-  },
-  calloutTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  calloutDescription: {
-    fontSize: 12,
-    color: '#666',
-  },
-  bottomSheet: {
-    position: 'absolute',
-    bottom: 80,
-    left: 0,
-    right: 0,
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 10,
-    maxHeight: '60%',
-  },
-  bottomSheetHeader: {
-    alignItems: 'center',
-    paddingTop: 12,
-    paddingBottom: 8,
-  },
-  bottomSheetHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: '#DDD',
-    borderRadius: 2,
-  },
-  bottomSheetContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  markerTypeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  markerTypeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    gap: 6,
-  },
-  markerTypeText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  distanceText: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '600',
-  },
-  markerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#000',
-  },
-  markerDescription: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 16,
-    lineHeight: 22,
-  },
-  detailsSection: {
-    marginBottom: 16,
-  },
-  detailsTitle: {
+  locationTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 12,
-    color: '#000',
+    color: colors.text,
+    marginBottom: 2,
   },
-  detailsSubtitle: {
-    fontSize: 14,
+  locationType: {
+    fontSize: 12,
+    color: colors.text,
+    opacity: 0.6,
     fontWeight: '600',
-    marginTop: 12,
-    marginBottom: 8,
-    color: '#333',
   },
-  detailRow: {
+  locationDistance: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  locationDescription: {
+    fontSize: 14,
+    color: colors.text,
+    opacity: 0.7,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  quickStats: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  statItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
-    gap: 8,
+    gap: 4,
   },
-  detailText: {
-    fontSize: 14,
-    color: '#666',
-    flex: 1,
-  },
-  tagContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 4,
-  },
-  tag: {
-    backgroundColor: '#F0F0F0',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  tagText: {
+  statText: {
     fontSize: 12,
-    color: '#666',
+    color: colors.text,
+    opacity: 0.7,
     fontWeight: '500',
   },
-  seasonText: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 16,
-  },
   directionsButton: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
-    paddingVertical: 14,
-    borderRadius: 12,
-    gap: 8,
+    backgroundColor: colors.background,
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 6,
+    marginTop: 8,
   },
   directionsButtonText: {
-    color: '#fff',
-    fontSize: 16,
+    color: colors.primary,
+    fontSize: 14,
     fontWeight: '600',
   },
-  closeButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: '#F0F0F0',
+  emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 60,
   },
-  closeButtonText: {
-    color: '#666',
-    fontSize: 16,
+  emptyStateText: {
+    fontSize: 18,
     fontWeight: '600',
+    color: colors.text,
+    marginTop: 16,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: colors.text,
+    opacity: 0.5,
+    marginTop: 4,
   },
 });
