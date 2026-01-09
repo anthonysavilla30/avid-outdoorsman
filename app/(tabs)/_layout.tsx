@@ -1,343 +1,77 @@
 
-import { Tabs } from 'expo-router';
-import { Platform } from 'react-native';
-import { IconSymbol } from '@/components/IconSymbol';
-import FloatingTabBar from '@/components/FloatingTabBar';
-import { colors } from '@/styles/commonStyles';
+import React from 'react';
+import { Stack } from 'expo-router';
+import FloatingTabBar, { TabBarItem } from '@/components/FloatingTabBar';
 
 export default function TabLayout() {
-  const isIOS = Platform.OS === 'ios';
-
-  if (isIOS) {
-    return (
-      <Tabs
-        screenOptions={{
-          headerShown: false,
-          tabBarActiveTintColor: colors.primary,
-          tabBarInactiveTintColor: colors.text,
-          tabBarStyle: {
-            backgroundColor: colors.background,
-            borderTopColor: colors.border,
-          },
-        }}
-      >
-        <Tabs.Screen
-          name="(home)"
-          options={{
-            title: 'Home',
-            tabBarIcon: ({ color }) => <IconSymbol name="house.fill" color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="explore"
-          options={{
-            title: 'Explore',
-            tabBarIcon: ({ color }) => <IconSymbol name="safari.fill" color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="weather"
-          options={{
-            title: 'Weather',
-            tabBarIcon: ({ color }) => <IconSymbol name="cloud.sun.fill" color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="profile"
-          options={{
-            title: 'Profile',
-            tabBarIcon: ({ color }) => <IconSymbol name="person.fill" color={color} />,
-          }}
-        />
-        {/* Hidden tabs - accessible via navigation */}
-        <Tabs.Screen
-          name="map"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="spots"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="regulations"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="gear"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="messages"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="notifications"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="badges"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="leaderboard"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="spot-detail"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="settings"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="search"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="user-profile"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="saved"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="activity-tracker"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="trips"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="offline-maps"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="recommendations"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="health"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="supabase-status"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="auth"
-          options={{
-            href: null,
-          }}
-        />
-      </Tabs>
-    );
-  }
+  // Define the tabs configuration with all main screens
+  const tabs: TabBarItem[] = [
+    {
+      name: '(home)',
+      route: '/(tabs)/(home)/',
+      iosIcon: 'house.fill',
+      androidIcon: 'home',
+      label: 'Home',
+    },
+    {
+      name: 'map',
+      route: '/(tabs)/map',
+      iosIcon: 'map.fill',
+      androidIcon: 'map',
+      label: 'Map',
+    },
+    {
+      name: 'trips',
+      route: '/(tabs)/trips',
+      iosIcon: 'backpack.fill',
+      androidIcon: 'luggage',
+      label: 'Trips',
+    },
+    {
+      name: 'profile',
+      route: '/(tabs)/profile',
+      iosIcon: 'person.fill',
+      androidIcon: 'person',
+      label: 'Profile',
+    },
+  ];
 
   return (
     <>
-      <Tabs
+      <Stack
         screenOptions={{
           headerShown: false,
+          animation: 'none',
         }}
-        tabBar={() => (
-          <FloatingTabBar
-            tabs={[
-              {
-                route: '/(tabs)/(home)',
-                label: 'Home',
-                icon: 'house.fill',
-              },
-              {
-                route: '/(tabs)/explore',
-                label: 'Explore',
-                icon: 'safari.fill',
-              },
-              {
-                route: '/(tabs)/(home)/create-post',
-                label: 'Post',
-                icon: 'plus.circle.fill',
-              },
-              {
-                route: '/(tabs)/weather',
-                label: 'Weather',
-                icon: 'cloud.sun.fill',
-              },
-              {
-                route: '/(tabs)/profile',
-                label: 'Profile',
-                icon: 'person.fill',
-              },
-            ]}
-          />
-        )}
       >
-        <Tabs.Screen name="(home)" />
-        <Tabs.Screen name="explore" />
-        <Tabs.Screen name="weather" />
-        <Tabs.Screen name="profile" />
-        {/* Hidden tabs - accessible via navigation */}
-        <Tabs.Screen
-          name="map"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="spots"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="regulations"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="gear"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="messages"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="notifications"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="badges"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="leaderboard"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="spot-detail"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="settings"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="search"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="user-profile"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="saved"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="activity-tracker"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="trips"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="offline-maps"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="recommendations"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="health"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="supabase-status"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="auth"
-          options={{
-            href: null,
-          }}
-        />
-      </Tabs>
+        <Stack.Screen name="(home)" />
+        <Stack.Screen name="map" />
+        <Stack.Screen name="trips" />
+        <Stack.Screen name="profile" />
+        <Stack.Screen name="weather" />
+        <Stack.Screen name="regulations" />
+        <Stack.Screen name="gear" />
+        <Stack.Screen name="health" />
+        <Stack.Screen name="activity-tracker" />
+        <Stack.Screen name="spot-detail" />
+        <Stack.Screen name="supabase-status" />
+        <Stack.Screen name="auth" />
+        <Stack.Screen name="messages" />
+        <Stack.Screen name="notifications" />
+        <Stack.Screen name="search" />
+        <Stack.Screen name="saved" />
+        <Stack.Screen name="spots" />
+        <Stack.Screen name="explore" />
+        <Stack.Screen name="recommendations" />
+        <Stack.Screen name="badges" />
+        <Stack.Screen name="leaderboard" />
+        <Stack.Screen name="offline-maps" />
+        <Stack.Screen name="settings" />
+        <Stack.Screen name="user-profile" />
+        <Stack.Screen name="privacy-policy" />
+        <Stack.Screen name="terms-conditions" />
+      </Stack>
+      <FloatingTabBar tabs={tabs} containerWidth={340} />
     </>
   );
 }

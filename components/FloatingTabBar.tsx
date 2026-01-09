@@ -22,7 +22,8 @@ import { colors } from '@/styles/commonStyles';
 export interface TabBarItem {
   name?: string;
   route: string;
-  icon: string;
+  iosIcon: string;
+  androidIcon: string;
   label: string;
 }
 
@@ -112,7 +113,8 @@ export default function FloatingTabBar({
                 activeOpacity={0.7}
               >
                 <IconSymbol
-                  name={tab.icon as any}
+                  ios_icon_name={tab.iosIcon}
+                  android_material_icon_name={tab.androidIcon}
                   size={26}
                   color={isActive ? colors.primary : colors.text}
                 />
